@@ -1,0 +1,60 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# IntelliJ
+.idea/
+*.ipr
+*.iml
+*.iws
+.idea_modules/
+*.log
+
+# NetBeans
+nb-configuration.xml
+
+# Visual Studio Code
+.vscode
+.factorypath
+
+# Docker
+docker-compose.yml
+*.pid
+
+# OSX
+.DS_Store
+
+# Vim
+*.swp
+*.swo
+
+# patch
+*.orig
+*.rej
+
+# Local environment
+.env
+
+# Plugin directory
+/.quarkus/cli/plugins/
+
+# Logs
+*.log
+
+# Binaries
+*.class
+*.jar
+*.war
+*.ear
+
+# Backups and temp files
+*~
+*.tmp
+*.bak
