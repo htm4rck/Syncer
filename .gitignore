@@ -1,39 +1,40 @@
+# General
+*.class
+*.log
+*.jar
+*.war
+*.ear
+*.zip
+
 # Gradle
 .gradle/
 build/
+.gradle/cache/
+.gradle/*/build/
+gradle-app.setting/
+gradle-app.setting.lock
+!gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# VS Code
+.vscode/
 
 # Eclipse
 .project
 .classpath
 .settings/
-bin/
 
-# IntelliJ
-.idea
-*.ipr
-*.iml
-*.iws
+# Docker
+docker-compose.yml
+Dockerfile
+*.tar
+.dockerignore
 
-# NetBeans
-nb-configuration.xml
-
-# Visual Studio Code
-.vscode
-.factorypath
-
-# OSX
+# OS-specific
 .DS_Store
-
-# Vim
-*.swp
-*.swo
-
-# patch
-*.orig
-*.rej
-
-# Local environment
-.env
-
-# Plugin directory
-/.quarkus/cli/plugins/
+Thumbs.db

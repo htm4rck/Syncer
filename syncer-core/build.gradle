@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'io.quarkus' version '3.11.1' // Asegúrate de usar la versión correcta de Quarkus
+    id 'io.quarkus'
 }
 
 repositories {
@@ -12,7 +12,6 @@ dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation project(':syncer-entities')
     implementation 'io.quarkus:quarkus-hibernate-orm-panache'
-    //implementation 'io.quarkus:quarkus-hibernate-orm'
     testImplementation 'io.quarkus:quarkus-junit5'
     implementation 'org.apache.poi:poi-ooxml:5.2.3'
 }
