@@ -10,34 +10,33 @@ repositories {
 
 dependencies {
     implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-smallrye-context-propagation'
+    implementation 'io.quarkus:quarkus-arc'
     implementation project(':syncer-entities')
     implementation 'io.quarkus:quarkus-hibernate-orm-panache'
-    testImplementation 'io.quarkus:quarkus-junit5'
     implementation 'org.apache.poi:poi-ooxml:5.2.3'
+    testImplementation 'io.quarkus:quarkus-junit5'
+    implementation 'org.jboss:jandex:2.4.1.Final'
 }
 
-group 'com.ndp'
-version '1.0.0-SNAPSHOT'
+group = 'com.ndp'
+version = '1.0.0-SNAPSHOT'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
 }
 
-test {
-    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
-}
-compileJava {
-    options.encoding = 'UTF-8'
-    options.compilerArgs << '-parameters'
-}
-
-compileTestJava {
-    options.encoding = 'UTF-8'
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ['-parameters']
 }
 
 tasks.register('buildJandexIndex', JavaExec) {
     mainClass.set('org.jboss.jandex.Main')
     args = ['-o', "$buildDir/classes/java/main/jandex.idx", "$buildDir/classes/java/main"]
     classpath = sourceSets.main.runtimeClasspath
+}
+
+tasks.withType(JavaCompile).configureEach {
+    finalizedBy 'buildJandexIndex'
 }

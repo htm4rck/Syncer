@@ -2,10 +2,12 @@ package com.ndp.service;
 
 import com.ndp.entity.Task;
 import com.ndp.repository.TaskRepository;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import jakarta.enterprise.context.ApplicationScoped;
+//import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.io.FileInputStream;

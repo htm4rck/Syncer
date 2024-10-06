@@ -1,14 +1,16 @@
 pluginManagement {
     repositories {
+        mavenLocal()
         mavenCentral()
         gradlePluginPortal()
-        mavenLocal()
     }
     plugins {
-        id "${quarkusPluginId}" version "${quarkusPluginVersion}"
+        id 'io.quarkus' version "${quarkusPlatformVersion}" // O la versión de Quarkus que estés utilizando
     }
 }
-rootProject.name='syncer-app'
-include('syncer-entities')
+
+rootProject.name = 'Syncer'
+
 include('syncer-core')
 include('syncer-engine')
+include('syncer-entities')
