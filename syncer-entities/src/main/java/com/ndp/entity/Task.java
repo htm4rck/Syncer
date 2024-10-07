@@ -30,7 +30,7 @@ public class Task {
     @Column(name = "tx_source_name", nullable = true, columnDefinition = "VARCHAR(64) COMMENT 'Nombre de la fuente'")
     public String sourceName;
 
-    @Column(name = "tx_destination_code", nullable = true, columnDefinition = "VARCHAR(32) COMMENT 'Código de destino'")
+    @Column(name = "tx_destination_code", nullable = true, columnDefinition = "VARCHAR(64) COMMENT 'Código de destino'")
     public String destinationCode;
 
     @Column(name = "tx_destination_path", nullable = true, columnDefinition = "VARCHAR(128) COMMENT 'Ruta de destino'")
@@ -39,7 +39,7 @@ public class Task {
     @Column(name = "tx_destination_name", nullable = true, columnDefinition = "VARCHAR(32) COMMENT 'Nombre de destino'")
     public String destinationName;
 
-    @Column(name = "tx_code", nullable = false, length = 32, columnDefinition = "VARCHAR(32) COMMENT 'Código de la tarea'")
+    @Column(name = "tx_code", nullable = false, length = 32, columnDefinition = "VARCHAR(128) COMMENT 'Código de la tarea'")
     public String code;
 
     @Column(name = "tx_name", nullable = false, length = 64, columnDefinition = "VARCHAR(64) COMMENT 'Nombre de la tarea'")
@@ -60,9 +60,9 @@ public class Task {
     @Column(name = "tx_status", nullable = false, columnDefinition = "VARCHAR(8) COMMENT 'Estado actual de la tarea'")
     public String status;
 
-    @Column(name = "bl_bulk_add", nullable = false, columnDefinition = "CHAR(1) COMMENT 'Indicador de carga masiva Y | N'")
-    public String bulkAdd;
+    @Column(name = "bl_bulk_add", nullable = true, columnDefinition = "CHAR(1) COMMENT 'Indicador de carga masiva Y | N'")
+    public String bulkAdd = "N";
 
-    @Column(name = "tx_migration_type", nullable = false, columnDefinition = "VARCHAR(16) COMMENT 'Tipo de migración de la tarea'")
-    public String migrationType;
+    @Column(name = "tx_migration_type", nullable = true, columnDefinition = "VARCHAR(16) COMMENT 'Tipo de migración de la tarea'")
+    public String migrationType = "";
 }

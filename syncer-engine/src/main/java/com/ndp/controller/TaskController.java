@@ -23,7 +23,7 @@ public class TaskController {
     @Path("/load")
     public Response loadTasks() {
         try {
-            taskService.loadTasksFromExcel("ruta/al/archivo.xlsx");
+            //taskService.loadTasksFromExcel("ruta/al/archivo.xlsx");
             return Response.ok("Tareas cargadas o actualizadas exitosamente").build();
         } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

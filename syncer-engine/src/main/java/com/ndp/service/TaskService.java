@@ -2,73 +2,33 @@ package com.ndp.service;
 
 import com.ndp.entity.Task;
 import com.ndp.repository.TaskRepository;
+import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.event.Observes;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
-//import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
+
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
+import java.io.InputStream;
 
 @ApplicationScoped
 public class TaskService {
 
+    private static final Logger logger = Logger.getLogger(TaskService.class);
+
     @Inject
+    @Startup
     TaskRepository taskRepository;
 
-    // Cargar datos desde Excel
-    @Transactional
-    public void loadTasksFromExcel(String filePath) throws Exception {
-        try (InputStream fis = new FileInputStream(filePath);
-             Workbook workbook = new XSSFWorkbook(fis)) {
 
-            Sheet sheet = workbook.getSheetAt(0);  // Supone que los datos están en la primera hoja
-            int numberOfRows = sheet.getPhysicalNumberOfRows();
-
-            for (int i = 1; i < numberOfRows; i++) {
-                Row row = sheet.getRow(i);
-
-                if (row == null) {
-                    continue;  // Saltar filas vacías
-                }
-
-                String code = getCellValueAsString(row.getCell(8));  // Columna tx_code
-                Task task = taskRepository.findByCode(code);
-
-                if (task == null) {
-                    task = new Task();
-                }
-
-                task.setGroup(getCellValueAsString(row.getCell(1)));
-                task.setSourceCode(getCellValueAsString(row.getCell(2)));
-                task.setSourcePath(getCellValueAsString(row.getCell(3)));
-                task.setSourceName(getCellValueAsString(row.getCell(4)));
-                task.setDestinationCode(getCellValueAsString(row.getCell(5)));
-                task.setDestinationPath(getCellValueAsString(row.getCell(6)));
-                task.setDestinationName(getCellValueAsString(row.getCell(7)));
-                task.setCode(getCellValueAsString(row.getCell(8)));
-                task.setName(getCellValueAsString(row.getCell(9)));
-                task.setApp(getCellValueAsString(row.getCell(10)));
-                task.setData(getCellValueAsString(row.getCell(11)));
-                task.setOrderExecution(Integer.parseInt(getCellValueAsString(row.getCell(12))));
-                task.setStatusOperation(getCellValueAsString(row.getCell(13)));
-                task.setStatus(getCellValueAsString(row.getCell(14)));
-                task.setBulkAdd(getCellValueAsString(row.getCell(15)));
-                task.setMigrationType(getCellValueAsString(row.getCell(16)));
-
-                taskRepository.persist(task);
-            }
-        }
-    }
-
-    // CRUD operations
-
-    // Crear o actualizar una tarea
     @Transactional
     public Task saveOrUpdate(Task task) {
         Task existingTask = taskRepository.findByCode(task.getCode());
