@@ -11,11 +11,11 @@ import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class SecurityService {
-    String fingerprint = "45e0fcea3a3231f3ace7c83b616989ed";
-    String signature = "signature";
-    String identifier = "agarcia@360salesolutions.com";
-    String password = "Admin@9876";
-    String token = "";
+    public String fingerprint = "45e0fcea3a3231f3ace7c83b616989ed";
+    public String signature = "signature";
+    public String identifier = "agarcia@360salesolutions.com";
+    public String password = "Admin@9876";
+    public String token = "";
 
     private static final Logger logger = Logger.getLogger(SecurityService.class);
 
@@ -59,9 +59,9 @@ public class SecurityService {
             headers.put("content-type", "application/json");
             headers.put("fingerprint", this.fingerprint);
             headers.put("identifier", this.identifier);
-            headers.put("origin", "https://azaleia.pos.360salesolutions.com");
+            headers.put("origin", "https://pos.360salesolutions.com");
             headers.put("priority", "u=1, i");
-            headers.put("referer", "https://azaleia.pos.360salesolutions.com/");
+            headers.put("referer", "https://pos.360salesolutions.com/");
             headers.put("sec-ch-ua", "\"Microsoft Edge\";v=\"129\", \"Not=A?Brand\";v=\"8\", \"Chromium\";v=\"129\"");
             headers.put("sec-ch-ua-mobile", "?0");
             headers.put("sec-ch-ua-platform", "\"Windows\"");

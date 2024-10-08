@@ -10,4 +10,8 @@ public class TaskRepository implements PanacheRepository<Task> {
     public Task findByCode(String code) {
         return find("code", code).firstResult();
     }
+
+    public Task findBySourceCode(String sourceCode) {
+        return find("sourceCode", sourceCode).firstResult();
+    }
 }

@@ -85,7 +85,7 @@ public class LoadService {
                 }
                 mapRowToTask(row, task);
                 taskService.saveOrUpdate(task);
-                logger.info("Task persistida: " + task.getCode());
+                //logger.info("Task persistida: " + task.getCode());
             }
 
         } catch (Exception e) {
@@ -102,6 +102,7 @@ public class LoadService {
      */
     private void mapRowToTask(Map<String, String> row, Task task) {
         task.setGroup(row.get("group"));
+        task.setSourceService(row.get("sourceService"));
         task.setSourceCode(row.get("sourceCode"));
         task.setSourcePath(row.get("sourcePath"));
         task.setSourceName(row.get("sourceName"));
@@ -111,9 +112,7 @@ public class LoadService {
         task.setCode(row.get("code"));
         task.setName(row.get("name"));
         task.setApp(row.get("app"));
-        logger.info("Data: " + row.get("data"));
         task.setData(row.get("data"));
-        logger.info("Order Execution: " + row.get("orderExecution"));
         task.setOrderExecution(Integer.parseInt(row.get("orderExecution")));
 
         task.setStatusOperation(row.get("statusOperation"));

@@ -2,7 +2,7 @@
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+If you want to learn more about Quarkus, please visit its website: https:///quarkus.io/ .
 
 ## Running the application in dev mode
 
@@ -45,14 +45,14 @@ Or, if you don't have GraalVM installed, you can run the native executable build
 
 You can then execute your native executable with: `./build/security-entities-1.0.0-SNAPSHOT-runner`
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/gradle-tooling.
+If you want to learn more about building native executables, please consult https:///quarkus.io/guides/gradle-tooling.
 
 ## Related Guides
 
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- RESTEasy Classic ([guide](https://quarkus.io/guides/resteasy)): REST endpoint framework implementing Jakarta REST and more
+- REST ([guide](https:///quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
+- REST Jackson ([guide](https:///quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
+- Hibernate ORM with Panache ([guide](https:///quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
+- RESTEasy Classic ([guide](https:///quarkus.io/guides/resteasy)): REST endpoint framework implementing Jakarta REST and more
 
 ## Provided Code
 
@@ -60,19 +60,19 @@ If you want to learn more about building native executables, please consult http
 
 Create your first JPA entity
 
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
+[Related guide section...](https:///quarkus.io/guides/hibernate-orm)
 
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
+[Related Hibernate with Panache section...](https:///quarkus.io/guides/hibernate-orm-panache)
 
 
 ### REST
 
 Easily start your REST Web Services
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+[Related guide section...](https:///quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
 
 ### RESTEasy JAX-RS
 
 Easily start your RESTful Web Services
 
-[Related guide section...](https://quarkus.io/guides/getting-started#the-jax-rs-resources)
+[Related guide section...](https:///quarkus.io/guides/getting-started#the-jax-rs-resources)

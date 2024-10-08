@@ -20,6 +20,8 @@ public class Task {
 
     @Column(name = "tx_group", nullable = false, columnDefinition = "VARCHAR(32) COMMENT 'Grupo al que pertenece la tarea'")
     public String group;
+    @Column(name = "tx_source_service", nullable = true, columnDefinition = "VARCHAR(64) COMMENT 'Ruta de la fuente'")
+    public String sourceService;
 
     @Column(name = "tx_source_code", nullable = true, columnDefinition = "VARCHAR(32) COMMENT 'Código de la fuente'")
     public String sourceCode;
