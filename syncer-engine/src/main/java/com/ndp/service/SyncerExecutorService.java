@@ -37,10 +37,10 @@ public class SyncerExecutorService {
         logger.info("SyncerExecutorService initialized");
         List<Sequence> sequences = getSequences();
         if (sequences != null) {
-            sequences.forEach((sequence) -> {
+            /*sequences.forEach((sequence) -> {
                 getObject(sequence);
                 logger.info("Key: " + sequence.getObjectName());
-            });
+            });*/
         }
     }
 

@@ -3,21 +3,21 @@ package com.ndp.service;/*
  * https://topdeveloperacademy.com
  * All rights reserved
  */
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.quarkus.runtime.StartupEvent;
+import jakarta.enterprise.event.Observes;
 import lombok.Getter;
 import lombok.Setter;
-import org.jboss.weld.environment.se.Weld;
-import org.jboss.weld.environment.se.WeldContainer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ndp.util.SAPServices;
-import jakarta.inject.Inject;
 
-
+import java.io.*;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -25,9 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.logging.FileHandler;
@@ -35,209 +32,88 @@ import java.util.logging.SimpleFormatter;
 
 interface Procesable {
     String getId(); // Obtener el ID del objeto
-    void procesar(); // Método para procesar el objeto
+
+    void procesar(SAPService sapService); // Método para procesar el objeto
 }
 
 public class ProcesadorGeneral {
-    private static final Logger logger = Logger.getLogger(ProcesadorGeneral.class.getName());
-    private static final int NUM_THREADS = 20;  // Número de hilos simultáneos
+    private static final org.jboss.logging.Logger logger = org.jboss.logging.Logger.getLogger(ProcesadorGeneral.class);
+    private static final int NUM_THREADS = 20;
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static <T extends Procesable> void procesarObjetosEnParalelo(List<T> objetos, String nombreObjeto) throws InterruptedException {
         ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
         CompletionService<Void> completionService = new ExecutorCompletionService<>(threadPool);
-
+        SAPService sapService = new SAPService();
         for (T objeto : objetos) {
             completionService.submit(() -> {
-                procesarObjeto(objeto, nombreObjeto);
+                procesarObjeto(objeto, nombreObjeto, sapService);
                 return null;
             });
         }
 
         threadPool.shutdown();
 
-        // Esperar a que todas las tareas terminen
         try {
             for (int i = 0; i < objetos.size(); i++) {
                 Future<Void> future = completionService.take(); // Esperar la siguiente tarea en completarse
                 try {
                     future.get(); // Obtener el resultado para asegurarse de que no hubo excepciones
                 } catch (ExecutionException e) {
-                    logger.log(Level.SEVERE, "Error en el procesamiento de una operación", e.getCause());
+                    logger.warn("Error en el procesamiento de una operación", e.getCause());
                 }
             }
         } catch (InterruptedException e) {
-            logger.log(Level.SEVERE, "Interrupción durante la espera de tareas", e);
+            logger.warn("Interrupción durante la espera de tareas", e);
             threadPool.shutdownNow();
         }
     }
 
-    public static <T extends Procesable> void procesarObjeto(T objeto, String nombreObjeto) {
+    public static <T extends Procesable> void procesarObjeto(T objeto, String nombreObjeto, SAPService sapService) {
         try {
             String threadName = Thread.currentThread().getName();
             String currentTime = LocalDateTime.now().format(formatter);
-
-            // Procesar el objeto
-            if (nombreObjeto.equals("facturas")) {
-                try {
-                    String url = URLBase + "/Invoices";
-                    ObjectMapper mapper = new ObjectMapper();
-                    String json = mapper.writeValueAsString(objeto);
-                    logger.log(Level.SEVERE, "Este es el JSON: " + json);
-
-                    HttpClient client = HttpClient.newBuilder()
-                            .connectTimeout(Duration.ofSeconds(120))
-                            .build();
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(url))
-                            .header("Content-Type", "application/json")
-                            .header("Cookie", cookie.get())
-                            .POST(HttpRequest.BodyPublishers.ofString(json))
-                            .build();
-
-                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-                    if (response.statusCode() == 200) {
-                        logger.log(Level.SEVERE, response.body());
-                    } else {
-                        logger.log(Level.SEVERE, "POST request failed with status code: " + response.body());
-                    }
-                } catch (IOException | InterruptedException e) {
-                    logger.log(Level.SEVERE, "Error durante la solicitud POST a SAP: " + e.getMessage(), e);
-                    int maxReintentos = 3;
-                    for (int i = 0; i < maxReintentos; i++) {
-                        try {
-                            String url = URLBase + "/Invoices";
-                            ObjectMapper mapper = new ObjectMapper();
-                            String json = mapper.writeValueAsString(objeto);
-                            HttpClient client = HttpClient.newBuilder()
-                                    .connectTimeout(Duration.ofSeconds(120))
-                                    .build();
-                            HttpRequest request = HttpRequest.newBuilder()
-                                    .uri(URI.create(url))
-                                    .header("Content-Type", "application/json")
-                                    .header("Cookie", cookie.get())
-                                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                                    .build();
-                            // Reintentar la operación
-                            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                            if (response.statusCode() == 200) {
-                                break;  // Éxito en el reintento
-                            }
-                        } catch (IOException | InterruptedException retryEx) {
-                            logger.log(Level.SEVERE, "Reintento fallido: " + (i + 1) + " - " + retryEx.getMessage(), retryEx);
-                        }
-                    }
-                }
-            } else {
-                objeto.procesar();
-            }
-
+            objeto.procesar(sapService);
             currentTime = LocalDateTime.now().format(formatter);
-            logger.log(Level.SEVERE, "[" + currentTime + "], Hilo: " + threadName + ", Objeto: " + nombreObjeto + ", terminó de procesar el objeto, ID " + objeto.getId());
+            logger.warn("[" + currentTime + "], Hilo: " + threadName + ", Objeto: " + nombreObjeto + ", terminó de procesar el objeto, ID " + objeto.getId());
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Error procesando objeto ID: " + objeto.getId() + " - " + e.getMessage(), e);
+            logger.warn("Error procesando objeto ID: " + objeto.getId() + " - " + e.getMessage(), e);
         }
     }
 
 
-    // Simular la obtención de facturas
     public static List<Factura> obtenerFacturas() {
-
-        String archivoCSV = "C:/proyects/Syncer/syncer-engine/src/main/resources/facturas.csv";
+        String archivoCSV = "facturas.csv";
         String linea = "";
         String separadorCSV = ";";
 
-        // Crear una lista para almacenar los registros
         List<Factura> listaRegistros = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(archivoCSV))) {
-            // Leer la primera línea (cabecera)
+        try (InputStream inputStream = ProcesadorGeneral.class.getClassLoader().getResourceAsStream(archivoCSV);
+             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String encabezado = br.readLine();
 
-            // Leer el archivo línea por línea
             while ((linea = br.readLine()) != null) {
-                // Dividir la línea en columnas
                 String[] columnas = linea.split(separadorCSV);
-
-                // Asignar cada columna a una variable
                 String correlativo = columnas[0];
-                String cliente = columnas[1];
-                Double monto = Double.parseDouble(columnas[2]);
-
-                // Crear un objeto Registro y agregarlo a la lista
-
                 Factura registro = new Factura(correlativo);
-                logger.log(Level.SEVERE,"Este es el registro"+ registro.toJson());
                 listaRegistros.add(registro);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return listaRegistros;
-/*
-        return List.of(
-                new Factura("F001", "Cliente A", 100.50),
-                new Factura("F002", "Cliente B", 200.75)
-        );*/
     }
-    // Simular la obtención de pagos
 
-
-    ////////////////////////////////////
-    private static String URLBase = "https://azaleia.sl.360salesolutions.com/b1s/v1/";
-    private static Optional<String> cookie = Optional.empty();
-
-    public static Optional<String> loginToSAP() {
-        try {
-            String url = URLBase + "Login";
-            String json = """
-                {
-                    "CompanyDB": "B1H_AZALEIA_LOCALIZACION2",
-                    "Password": "B1Admin$$",
-                    "UserName": "manager"
-                }
-            """;
-
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() == 200) {
-                List<String> cookies = response.headers().allValues("Set-Cookie");
-                if (!cookies.isEmpty()) {
-                    cookie = Optional.of(cookies.get(0));
-                    logger.log(Level.SEVERE,"Login request failed with status code: " + cookie.get());
-                    return cookie;
-                }
-            } else {
-                logger.log(Level.SEVERE,"Login request failed with status code: " + response.statusCode());
-            }
-        } catch (Exception e) {
-            logger.log(Level.SEVERE,"Error during login to SAP", e);
-        }
-        return Optional.empty();
-    }
-    ////////////////////////////////////
-    public static void main(String[] args) throws InterruptedException {
+    public void onStart(@Observes StartupEvent ev) throws InterruptedException {
 
         try {
             FileHandler fileHandler = new FileHandler("mi_log.log", true);
             fileHandler.setFormatter(new SimpleFormatter());
-            logger.addHandler(fileHandler);
+            //logger.addHandler(fileHandler);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        loginToSAP();
-
-
 
         String currentTime = LocalDateTime.now().format(formatter);  // Obtener la fecha y hora actuales
         // 1. Obtener listas de objetos a procesar
@@ -246,91 +122,59 @@ public class ProcesadorGeneral {
         List<NotaDeCredito> notasDeCredito = obtenerNotasDeCredito();
 
         // 2. Procesar cada tipo de objeto en secuencia pero en paralelo para cada tipo
-        logger.log(Level.SEVERE,"[" + currentTime + "], Inicio Sincronización Objetos,,,");
-        logger.log(Level.SEVERE,"[" + currentTime + "], Sincronizando Facturas,,,");
-        procesarObjetosEnParalelo(facturas,"facturas");
-        logger.log(Level.SEVERE,"[" + currentTime + "], Sincronizando Pagos,,,");
+        logger.warn("[" + currentTime + "], Inicio Sincronización Objetos,,,");
+        logger.warn("[" + currentTime + "], Sincronizando Facturas,,,");
+        procesarObjetosEnParalelo(facturas, "facturas");
+        logger.warn("[" + currentTime + "], Sincronizando Pagos,,,");
         //procesarObjetosEnParalelo(pagos,"pagos");
-        logger.log(Level.SEVERE,"[" + currentTime + "], Sincronizando Notas de crédito,,,");
+        logger.warn("[" + currentTime + "], Sincronizando Notas de crédito,,,");
         //procesarObjetosEnParalelo(notasDeCredito,"nc");
     }
+
     public static List<Pago> obtenerPagos() {
-        String archivoCSV = "C:/proyects/Syncer/syncer-engine/src/main/resources/pagos.csv";
+        String archivoCSV = "pagos.csv";
         String linea = "";
         String separadorCSV = ";";
 
-        // Crear una lista para almacenar los registros
         List<Pago> listaRegistros = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(archivoCSV))) {
-            // Leer la primera línea (cabecera)
+        try (InputStream inputStream = ProcesadorGeneral.class.getClassLoader().getResourceAsStream(archivoCSV);
+             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String encabezado = br.readLine();
 
-            // Leer el archivo línea por línea
             while ((linea = br.readLine()) != null) {
-                // Dividir la línea en columnas
                 String[] columnas = linea.split(separadorCSV);
-
-                // Asignar cada columna a una variable
                 String correlativo = columnas[0];
-                String cliente = columnas[1];
-                Double monto = Double.parseDouble(columnas[2]);
-
-                // Crear un objeto Registro y agregarlo a la lista
-                Pago registro = new Pago(correlativo, cliente, monto);
+                Pago registro = new Pago(correlativo,"", 10);
                 listaRegistros.add(registro);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return listaRegistros;
-
-        /*
-        return List.of(
-                new Pago("P001", "Cliente A", 100.50),
-                new Pago("P002", "Cliente B", 200.75)
-        );*/
     }
 
-    // Simular la obtención de notas de crédito
     public static List<NotaDeCredito> obtenerNotasDeCredito() {
-        String archivoCSV = "C:/proyects/Syncer/syncer-engine/src/main/resources/nc.csv";
+        String archivoCSV = "nc.csv";
         String linea = "";
         String separadorCSV = ";";
 
-        // Crear una lista para almacenar los registros
         List<NotaDeCredito> listaRegistros = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(archivoCSV))) {
-            // Leer la primera línea (cabecera)
+        try (InputStream inputStream = ProcesadorGeneral.class.getClassLoader().getResourceAsStream(archivoCSV);
+             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String encabezado = br.readLine();
 
-            // Leer el archivo línea por línea
             while ((linea = br.readLine()) != null) {
-                // Dividir la línea en columnas
                 String[] columnas = linea.split(separadorCSV);
-
-                // Asignar cada columna a una variable
                 String correlativo = columnas[0];
-                String cliente = columnas[1];
-                Double monto = Double.parseDouble(columnas[2]);
-
-                // Crear un objeto Registro y agregarlo a la lista
-                NotaDeCredito registro = new NotaDeCredito(correlativo, cliente, monto);
+                NotaDeCredito registro = new NotaDeCredito(correlativo,"",10);
                 listaRegistros.add(registro);
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return listaRegistros;
-       /* return List.of(
-                new NotaDeCredito("NC001", "Cliente A", 50.25),
-                new NotaDeCredito("NC002", "Cliente B", 75.00)
-        );*/
     }
 }
 
@@ -406,7 +250,7 @@ class Factura implements Procesable {
     @JsonProperty("DocumentLines")
     private List<DocumentLine> DocumentLines;
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final Logger logger = Logger.getLogger(ProcesadorGeneral.class.getName());
+    private static final org.jboss.logging.Logger logger = org.jboss.logging.Logger.getLogger(ProcesadorGeneral.class);
 
     public Factura(String id, String cliente, double monto) {
         this.id = id;
@@ -421,9 +265,10 @@ class Factura implements Procesable {
         DocumentLine documentLine = new DocumentLine(List.of(binAllocation), List.of(taxJurisdiction));
         this.NumAtCard = Serie_correlativo;
         this.U_BPV_NCON2 = NumAtCard.split("-")[1];
-        this.U_BPV_SERI= NumAtCard.substring(2, 6) + "-01";
+        this.U_BPV_SERI = NumAtCard.substring(2, 6) + "-01";
         this.DocumentLines = List.of(documentLine);
     }
+
     @Getter
     @Setter
     public static class DocumentLine {
@@ -471,6 +316,7 @@ class Factura implements Procesable {
             this.LineTaxJurisdictions = lineTaxJurisdictions;
         }
     }
+
     @Getter
     @Setter
     public static class DocumentLinesBinAllocation {
@@ -479,6 +325,7 @@ class Factura implements Procesable {
         @JsonProperty("Quantity")
         private double Quantity = 1.0;
     }
+
     @Getter
     @Setter
     public static class LineTaxJurisdiction {
@@ -501,18 +348,16 @@ class Factura implements Procesable {
         return id;
     }
 
-    public void procesar() {
-        String threadName = Thread.currentThread().getName();  // Obtener el nombre del hilo actual
-        String currentTime = LocalDateTime.now().format(formatter);  // Obtener la fecha y hora actuales
-        /*try {
-            // Simulación de procesamiento
-            //Thread.sleep(500); //Simulamos el acceso a BD para obtener la data a enviar
-            //Thread.sleep(2500); // Simulamos 2 segundos de procesamiento en el SL
-            System.out.println("Procesando factura ID: " + id + " de cliente: " + cliente);
-            //logger.log(Level.SEVERE,"[" + currentTime + "] Hilo: " + threadName + " terminó de procesar el objeto ID " + objeto.getId());
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }*/
+    public void procesar(SAPService sapService) {
+        String threadName = Thread.currentThread().getName();
+        String currentTime = LocalDateTime.now().format(formatter);
+        try {
+            sapService.postToSAP(this.toJson(), "Invoices");
+            //logger.warn( "[" + currentTime + "], Hilo: " + threadName + ", Objeto: facturas, terminó de procesar el objeto, ID " + id);
+        } catch (JsonProcessingException e) {
+            logger.warn( "Error procesando objeto ID: " + id + " - " + e.getMessage(), e);
+        }
+
     }
 }
 
@@ -532,7 +377,7 @@ class Pago implements Procesable {
         return id;
     }
 
-    public void procesar() {
+    public void procesar(SAPService sapService) {
         /*try {
             // Simulación de procesamiento
             //Thread.sleep(500); //Simulamos el acceso a BD para obtener la data a enviar
@@ -560,7 +405,7 @@ class NotaDeCredito implements Procesable {
         return id;
     }
 
-    public void procesar() {
+    public void procesar(SAPService sapService) {
         /*try {
             // Simulación de procesamiento
             Thread.sleep(500); //Simulamos el acceso a BD para obtener la data a enviar
@@ -569,5 +414,103 @@ class NotaDeCredito implements Procesable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }*/
+    }
+}
+
+class SAPService {
+    private static final org.jboss.logging.Logger logger = org.jboss.logging.Logger.getLogger(SAPService.class);
+    String URLBase = "https://azaleia.sl.360salesolutions.com/b1s/v1/";
+    Optional<String> cookie = Optional.empty();
+    public SAPService() {
+        cookie = loginToSAP();
+    }
+    public void postToSAP(String objetoJSON, String path) {
+        try {
+            String url = URLBase + path;
+            logger.warn("Request: " + objetoJSON);
+
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(120))
+                    .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .header("Cookie", cookie.get())
+                    .POST(HttpRequest.BodyPublishers.ofString(objetoJSON))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                logger.warn("Response" + response.body());
+            } else {
+                logger.warn("Response - Error" + response.body());
+            }
+        } catch (IOException | InterruptedException e) {
+            logger.warn("Error durante la solicitud POST a SAP: " + e.getMessage(), e);
+            int maxReintentos = 8;
+            for (int i = 0; i < maxReintentos; i++) {
+                try {
+                    String url = URLBase + "/Invoices";
+                    ObjectMapper mapper = new ObjectMapper();
+                    String json = mapper.writeValueAsString(objetoJSON);
+                    logger.warn("Request Catch: (" + i + ")"+ objetoJSON);
+                    HttpClient client = HttpClient.newBuilder()
+                            .connectTimeout(Duration.ofSeconds(120))
+                            .build();
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(url))
+                            .header("Content-Type", "application/json")
+                            .header("Cookie", cookie.get())
+                            .POST(HttpRequest.BodyPublishers.ofString(json))
+                            .build();
+                    // Reintentar la operación
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                    if (response.statusCode() == 200) {
+                        logger.warn("Response Catch: (" + i + ")" + response.body());
+                        break;  // Éxito en el reintento
+                    }
+                } catch (IOException | InterruptedException retryEx) {
+                    logger.warn("Reintento fallido: " + (i + 1) + " - " + retryEx.getMessage(), retryEx);
+                }
+            }
+        }
+    }
+    public static Optional<String> loginToSAP() {
+        String URLBase = "https://azaleia.sl.360salesolutions.com/b1s/v1/";
+        Optional<String> cookie = Optional.empty();
+        try {
+            String url = URLBase + "Login";
+            String json = """
+                        {
+                            "CompanyDB": "B1H_AZALEIA_LOCALIZACION2",
+                            "Password": "B1Admin$$",
+                            "UserName": "manager"
+                        }
+                    """;
+
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                List<String> cookies = response.headers().allValues("Set-Cookie");
+                if (!cookies.isEmpty()) {
+                    cookie = Optional.of(cookies.get(0));
+                    logger.warn("Login Existoso: " + cookie.get());
+                    return cookie;
+                }
+            } else {
+                logger.warn("Login request failed with status code: " + response.statusCode());
+            }
+        } catch (Exception e) {
+            logger.warn("Error during login to SAP", e);
+        }
+        return Optional.empty();
     }
 }
