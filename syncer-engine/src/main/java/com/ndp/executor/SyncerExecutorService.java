@@ -3,6 +3,8 @@ package com.ndp.executor;
 import com.ndp.entity.queue.Queue;
 import com.ndp.entity.syncer.Task;
 import com.ndp.repository.TaskRepository;
+import com.ndp.types.QueueDto;
+import com.ndp.types.rest.Response;
 import com.ndp.util.BusinessConfig;
 import com.ndp.service.rest.NDPServices;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,21 +19,20 @@ import java.util.List;
 @ApplicationScoped
 public class SyncerExecutorService {
 
-    private static final Logger logger = Logger.getLogger(SyncerExecutorService.class);
+    @Inject
+    Logger logger;
     @Inject
     TaskRepository taskRepository;
 
-    List<Queue> listSequence = new ArrayList<>();
+    List<QueueDto> listSequence = new ArrayList<>();
     BusinessConfig businessConfig;
     @Inject
     NDPServices ndpServices;
-    //@Inject
-    //private final QueueService queueService;
-
 
     public void onStart(@Observes StartupEvent ev) {
         logger.info("SyncerExecutorService initialized");
-        //List<Queue> sequences = getSequences();
+        List<QueueDto> queueList = getSequences();
+        logger.warn("Objetos en Cola: " + queueList.size());
         List<Task> taskList = taskRepository.listAll();
         /*if (sequences != null) {
             taskList.forEach((task) -> {
@@ -50,13 +51,12 @@ public class SyncerExecutorService {
         });
     }
 
-    /*public List<Queue> getSequences() {
-        //TODO: Traer Objetos pendientes de la cola
+    public List<QueueDto> getSequences() {
         try {
-            Root<ndp.types.Queue> sequence = queueService.getSequenceData();
+            Response<QueueDto> sequence = ndpServices.ndpGet("https://azaleia.services.360salesolutions.com/queue-engine/queue/", QueueDto.class);
             if (sequence != null) {
                 logger.info("Sequence data retrieved successfully: " + sequence);
-                //his.listSequence = sequence.getData();
+                this.listSequence = sequence.getData().getPagination().getList();
                 return this.listSequence;
             } else {
                 logger.error("Failed to retrieve sequence data");
@@ -66,7 +66,7 @@ public class SyncerExecutorService {
             logger.error("Exception occurred while retrieving sequence data", e);
             return null;
         }
-    }*/
+    }
 
     public void getObject(Queue sequence) {
         Task task = taskRepository.findBySourceCode(sequence.getObject());

@@ -1,6 +1,7 @@
 package com.ndp.service.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ndp.types.rest.Response;
 import com.ndp.util.NDPEncryptPass;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -36,15 +37,6 @@ public class NDPServices {
         try {
             assert this.ndpEncryptPass != null;
             this.signature = this.ndpEncryptPass.getEncryptedPassword(this.password, this.identifier);
-            if (this.signature == null) {
-                logger.error("Failed to get encrypted password");
-                return null;
-            }
-            logger.warn("#######bien###############"+this.signature);
-        } catch (Exception e) {
-            logger.warn("###########cayo###########"+this.signature+e.getMessage());
-        }
-        try{
             String url = "https://azaleia.services.360salesolutions.com/secengine/auth/login";
             HttpClient client = HttpClient.newHttpClient();
             Map<String, String> headers = new HashMap<>();
@@ -78,7 +70,7 @@ public class NDPServices {
         }
     }
 
-    public <T> List<T> ndpGet(String url, Class<T> clazz) {
+    public <T> Response<T> ndpGet(String url, Class<T> clazz) {
         try {
             if (this.token == null || this.token.isEmpty()) {
                 logger.error("Token is not available. Please login first.");
@@ -94,7 +86,7 @@ public class NDPServices {
             headers.put("signature", this.signature);
 
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(url))
+                    .uri(URI.create(url+"?size=100&page=1"))
                     .GET();
 
             headers.forEach(requestBuilder::header);
@@ -105,9 +97,9 @@ public class NDPServices {
             if (response.statusCode() == 200) {
                 String responseBody = response.body();
                 logger.warn("Response body: " + responseBody);
-                //Root<T> responseObj = objectMapper.readValue(responseBody, objectMapper.getTypeFactory().constructParametricType(Response.class, clazz));
-                //logger.warn("Response object: " + responseObj);
-                return null;
+                Response<T> responseObj = objectMapper.readValue(responseBody, objectMapper.getTypeFactory().constructParametricType(Response.class, clazz));
+                logger.warn("Response object: " + responseObj);
+                return responseObj;
             } else {
                 logger.error("Request failed with status code: " + response.statusCode());
                 return null;

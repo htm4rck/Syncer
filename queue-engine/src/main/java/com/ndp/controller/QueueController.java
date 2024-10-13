@@ -6,7 +6,9 @@ import com.ndp.types.rest.Response;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+
 import java.util.List;
+
 import com.ndp.service.QueueService;
 import com.ndp.entity.queue.Queue;
 
@@ -18,19 +20,19 @@ public class QueueController {
     @Inject
     QueueService queueService;
 
-@GET
-public Response<Queue> getAllQueues(@QueryParam("company") String company,
-                                    @QueryParam("page") @DefaultValue("1") int page,
-                                    @QueryParam("size") @DefaultValue("20") int size) {
-    List<Queue> queues;
-    if (company != null && !company.isEmpty()) {
-        queues = queueService.listQueuesByCompany(company, page, size);
-    } else {
-        queues = queueService.listAllQueues(page, size);
+    @GET
+    public Response<Queue> getAllQueues(@QueryParam("company") String company,
+                                        @QueryParam("page") @DefaultValue("1") int page,
+                                        @QueryParam("size") @DefaultValue("20") int size) {
+        List<Queue> queues;
+        if (company != null && !company.isEmpty()) {
+            queues = queueService.listQueuesByCompany(company, page, size);
+        } else {
+            queues = queueService.listAllQueues(page, size);
+        }
+        Data<Queue> data = new Data<>(new Pagination<>(queues.size(), page, queues));
+        return new Response<>(true, data);
     }
-    Data<Queue> data = new Data<>(new Pagination<>(queues.size(), page, queues));
-    return new Response<>(true, data);
-}
 
     @GET
     @Path("/{id}")

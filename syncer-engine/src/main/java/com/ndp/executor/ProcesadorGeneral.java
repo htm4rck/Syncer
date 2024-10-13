@@ -99,7 +99,8 @@ public class ProcesadorGeneral {
         return listaRegistros;
     }
 
-    public void onStart(@Observes StartupEvent ev) throws InterruptedException {
+    // Todo: Descomentar para ejecutar la aplicación
+    /*public void onStart(@Observes StartupEvent ev) throws InterruptedException {
 
         try {
             FileHandler fileHandler = new FileHandler("mi_log.log", true);
@@ -123,7 +124,7 @@ public class ProcesadorGeneral {
         //procesarObjetosEnParalelo(pagos,"pagos");
         logger.warn("[" + currentTime + "], Sincronizando Notas de crédito,,,");
         //procesarObjetosEnParalelo(notasDeCredito,"nc");
-    }
+    }*/
 
     public static List<Pago> obtenerPagos() {
         String archivoCSV = "pagos.csv";
