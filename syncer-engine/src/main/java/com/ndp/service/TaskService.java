@@ -1,23 +1,15 @@
 package com.ndp.service;
 
-import com.ndp.entity.Task;
+import com.ndp.entity.syncer.Task;
 import com.ndp.repository.TaskRepository;
 import io.quarkus.runtime.Startup;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
-import java.io.InputStream;
 
 @ApplicationScoped
 public class TaskService {
@@ -27,7 +19,6 @@ public class TaskService {
     @Inject
     @Startup
     TaskRepository taskRepository;
-
 
     @Transactional
     public Task saveOrUpdate(Task task) {
@@ -55,44 +46,16 @@ public class TaskService {
         }
     }
 
-    // Obtener todas las tareas
     public List<Task> getAllTasks() {
         return taskRepository.listAll();
     }
 
-    // Obtener una tarea por ID
     public Optional<Task> getTaskById(Long id) {
         return taskRepository.findByIdOptional(id);
     }
 
-    // Eliminar una tarea por ID
     @Transactional
     public boolean deleteTask(Long id) {
         return taskRepository.deleteById(id);
-    }
-
-    // Método auxiliar para obtener el valor de una celda de Excel
-    private String getCellValueAsString(Cell cell) {
-        if (cell == null) {
-            return null;
-        }
-
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                if (DateUtil.isCellDateFormatted(cell)) {
-                    return cell.getDateCellValue().toString();
-                } else {
-                    return String.valueOf((int) cell.getNumericCellValue());
-                }
-            case BOOLEAN:
-                return Boolean.toString(cell.getBooleanCellValue());
-            case FORMULA:
-                return cell.getCellFormula();
-            case BLANK:
-            default:
-                return "";
-        }
     }
 }

@@ -1,6 +1,6 @@
 package com.ndp.repository;
 
-import com.ndp.entity.Task;
+import com.ndp.entity.syncer.Task;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 

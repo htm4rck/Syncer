@@ -1,6 +1,6 @@
 package com.ndp.controller;
 
-import com.ndp.entity.Task;
+import com.ndp.entity.syncer.Task;
 import com.ndp.service.TaskService;
 
 import jakarta.inject.Inject;

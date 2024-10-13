@@ -10,7 +10,7 @@ pluginManagement {
 }
 
 rootProject.name = 'Syncer'
-
-//include('syncer-core')
-include('syncer-engine')
 include('syncer-entities')
+//include('syncer-core')
+include('queue-engine')
+include('syncer-engine')

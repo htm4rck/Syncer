@@ -1,0 +1,21 @@
+FROM registry.access.redhat.com/ubi8/openjdk-17:1.18
+
+ENV LANGUAGE='en_US:en'
+COPY --chown=185 build/quarkus-app/lib/ /deployments/lib/
+COPY --chown=185 build/quarkus-app/*.jar /deployments/
+COPY --chown=185 build/quarkus-app/app/ /deployments/app/
+COPY --chown=185 build/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8080
+USER 185
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+ENV HOST=192.168.1.173:3306
+ENV SECURITY_DATABASE=queue
+ENV USER_DATABASE=root
+ENV PASS_DATABASE='root##root'
+ENV NDP_VALIDATE_REST_SECURITY='false'
+ENV SHOW_SQL='false'
+ENV BATCH_FETCH_SIZE=10
+
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]

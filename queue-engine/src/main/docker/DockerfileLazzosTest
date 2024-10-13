@@ -1,0 +1,17 @@
+# Utiliza una imagen base mínima con Java 17
+FROM registry.access.redhat.com/ubi8/openjdk-17:1.18
+
+# Define el usuario para ejecutar la aplicación
+USER 1001
+
+# Copia el JAR generado de Quarkus a la raíz del sistema de archivos en la imagen
+COPY  ../../../build/quarkus-app/quarkus-run.jar /quarkus-run.jar
+
+# Establece las variables de entorno necesarias
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/quarkus-run.jar"
+
+# Expone el puerto en el que se ejecuta la aplicación
+EXPOSE 8080
+
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
