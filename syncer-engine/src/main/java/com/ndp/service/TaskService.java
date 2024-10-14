@@ -1,28 +1,24 @@
 package com.ndp.service;
 
 import com.ndp.entity.syncer.Task;
-import com.ndp.repository.TaskRepository;
-import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
-
 import java.util.List;
-import java.util.Optional;
 
 @ApplicationScoped
 public class TaskService {
 
-    private static final Logger logger = Logger.getLogger(TaskService.class);
-
     @Inject
-    @Startup
-    TaskRepository taskRepository;
+    EntityManager entityManager;
+    @Inject
+    Logger logger;
 
     @Transactional
     public Task saveOrUpdate(Task task) {
-        Task existingTask = taskRepository.findByCode(task.getCode());
+        Task existingTask = findCode(task.getCode());
         if (existingTask != null) {
             existingTask.setName(task.getName());
             existingTask.setGroup(task.getGroup());
@@ -41,21 +37,37 @@ public class TaskService {
             existingTask.setMigrationType(task.getMigrationType());
             return existingTask;
         } else {
-            taskRepository.persist(task);
+            entityManager.persist(task);
             return task;
         }
     }
 
-    public List<Task> getAllTasks() {
-        return taskRepository.listAll();
+    public Task findCode(String code) {
+        try {
+            return entityManager.createNamedQuery("Task.findCode", Task.class)
+                    .setParameter("code", code)
+                    .getSingleResult();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
-    public Optional<Task> getTaskById(Long id) {
-        return taskRepository.findByIdOptional(id);
+    public Task findBySourceCode(String sourceCode) {
+        try {
+            return entityManager.createNamedQuery("Task.findBySourceCode", Task.class)
+                    .setParameter("sourceCode", sourceCode)
+                    .getSingleResult();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
-    @Transactional
-    public boolean deleteTask(Long id) {
-        return taskRepository.deleteById(id);
+    public List<Task> getAllTasks(int page, int size) {
+        int firstResult = (page - 1) * size;
+        return entityManager.createQuery("SELECT t FROM Task t", Task.class)
+                .setFirstResult(firstResult)
+                .setMaxResults(size)
+                .getResultList();
     }
+
 }

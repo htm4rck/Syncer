@@ -1,16 +1,16 @@
 package com.ndp.entity.syncer;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Column;
-import lombok.Getter;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
-@Entity(name = "t_task")
+@Entity
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+@NamedQuery(name = "Task.findCode", query = "SELECT t FROM Task t WHERE t.code = :code")
+@NamedQuery(name = "Task.findBySourceCode", query = "SELECT t FROM Task t WHERE t.sourceCode = :sourceCode")
 public class Task {
 
     @Id

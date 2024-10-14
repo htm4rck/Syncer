@@ -5,13 +5,14 @@ import com.ndp.types.rest.Response;
 import com.ndp.util.NDPEncryptPass;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import com.ndp.entity.syncer.Business;
 import org.jboss.logging.Logger;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
@@ -21,23 +22,30 @@ public class NDPServices {
     ObjectMapper objectMapper;
     @Inject
     NDPEncryptPass ndpEncryptPass;
-
-    private String fingerprint = "45e0fcea3a3231f3ace7c83b616989ed";
+    private final String path;
+    private final String fingerprint = "45e0fcea3a3231f3ace7c83b616989ed";
     private String signature = "signature";
-    private String identifier = "agarcia@360salesolutions.com";
-    private String password = "Admin@9876";
-    private String token = "";
+    private final String identifier;
+    private final String password;
+    private final String company;
+    private String token;
 
     @Inject
-    public NDPServices(NDPEncryptPass ndpEncryptPass) {
-        this.ndpEncryptPass = ndpEncryptPass;
+    public NDPServices(Business business) {
+        this.objectMapper = new ObjectMapper();
+        this.ndpEncryptPass = new NDPEncryptPass();
+        this.path = business.getPath();
+        this.identifier = business.getUser();
+        this.password = business.getPass();
+        this.company = business.getCompany();
         this.token = login();
     }
+
     public String login() {
         try {
             assert this.ndpEncryptPass != null;
             this.signature = this.ndpEncryptPass.getEncryptedPassword(this.password, this.identifier);
-            String url = "https://azaleia.services.360salesolutions.com/secengine/auth/login";
+            String url = this.path + "secengine/auth/login";
             HttpClient client = HttpClient.newHttpClient();
             Map<String, String> headers = new HashMap<>();
             headers.put("accept", "application/json, text/plain, */*");
@@ -49,16 +57,13 @@ public class NDPServices {
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .POST(HttpRequest.BodyPublishers.ofString("{}"));
-
             headers.forEach(requestBuilder::header);
-
             HttpRequest request = requestBuilder.build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
             if (response.statusCode() == 200) {
-                logger.warn("bodyResponse"+response.body());
+                logger.warn("bodyResponse" + response.body());
                 this.token = response.headers().firstValue("Token").orElse(null);
-                logger.warn("Login request"+this.token);
+                logger.warn("Login request" + this.token);
                 return this.token;
             } else {
                 logger.error("Login request failed with status code: " + response.statusCode());
@@ -79,14 +84,14 @@ public class NDPServices {
 
             HttpClient client = HttpClient.newHttpClient();
             Map<String, String> headers = new HashMap<>();
-            headers.put("company", "AZALEIA");
-            headers.put("entity", "AZALEIA");
+            headers.put("company", this.company);
+            headers.put("entity", this.company);
             headers.put("Token", this.token);
             headers.put("fingerprint", this.fingerprint);
             headers.put("signature", this.signature);
 
             HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                    .uri(URI.create(url+"?size=100&page=1"))
+                    .uri(URI.create(this.path + url))
                     .GET();
 
             headers.forEach(requestBuilder::header);
@@ -97,9 +102,8 @@ public class NDPServices {
             if (response.statusCode() == 200) {
                 String responseBody = response.body();
                 logger.warn("Response body: " + responseBody);
-                Response<T> responseObj = objectMapper.readValue(responseBody, objectMapper.getTypeFactory().constructParametricType(Response.class, clazz));
-                logger.warn("Response object: " + responseObj);
-                return responseObj;
+                logger.warn("Response Clazz: " + clazz.getName());
+                return objectMapper.readValue(responseBody, objectMapper.getTypeFactory().constructParametricType(Response.class, clazz));
             } else {
                 logger.error("Request failed with status code: " + response.statusCode());
                 return null;
