@@ -16,6 +16,8 @@ import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import io.quarkus.runtime.StartupEvent;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,9 +51,10 @@ public class SyncerExecutorService {
 
     public void onStart(@Observes StartupEvent ev) {
         Business businessNDP = businessService.findByCompanyAndBusiness(company, "NDP");
-        Business businessSAP = businessService.findByCompanyAndBusiness(company, "SAP");
+        Business businessSAP = businessService.findByCompanyAndBusiness(company, "SAP.SL");
         logger.warn("businessNDP: " + businessNDP);
         ndpServices = new NDPServices(businessNDP);
+        sapServices = new SAPServices(businessSAP);
         logger.info("SyncerExecutorService initialized");
         List<QueueDto> queueList = getSequences();
         logger.warn("Objetos en Cola: " + queueList.size());
@@ -97,36 +100,66 @@ public class SyncerExecutorService {
     }
 
     public void processObject(Task task, QueueDto queue) {
+        Object object = getObjectNDP(queue);
+        Object convertedObject = convertObject(task, object);
+        sendObjectSAP(task, convertedObject);
+        logger.warn("Procesando objeto: " + queue.toString());
+        logger.warn("Procesando tarea: " + task.toString());
+
+    }
+
+    public void sendObjectSAP(Task task, Object object) {
+        sapServices.sendPostRequest(task.destinationPath, object);
+    }
+
+    public Object convertObject(Task task, Object object) {
         try {
-            // Obtén el nombre completo de la clase a partir del nombre simple
+            String destinationClassName = "com.ndp.mapper.sap." + task.getDestinationCode();
+            Class<?> destinationClass = Class.forName(destinationClassName);
+
+            Constructor<?> constructor = destinationClass.getConstructor(object.getClass());
+            Object destinationObject = constructor.newInstance(object);
+            logger.warn("Destination object: " + destinationObject.toString());
+
+        } catch (ClassNotFoundException e) {
+            logger.error("Clase no encontrada: " + task.getDestinationCode(), e);
+        } catch (NoSuchMethodException e) {
+            logger.error("Constructor no encontrado en la clase: " + task.getDestinationCode(), e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            logger.error("Error al instanciar la clase: " + task.getDestinationCode(), e);
+        }
+        return object;
+    }
+
+    public Object getObjectNDP( QueueDto queue ){
+        try {
             String className = classNameMapping.get(queue.getObject());
             logger.warn("Clase: " + className);
             if (className == null) {
                 throw new ClassNotFoundException("No mapping found for class: " + queue.getObject());
             }
             Class<?> clazz = Class.forName(className);
-            // Llama al método ndpGet con la clase obtenida
             Response<?> response = ndpServices.ndpGet(queue.getPath(), clazz);
-
-            // Extrae el primer objeto del value y asegúrate de que sea del tipo clazz
             if (response != null && response.getData() != null) {
                 List<?> valueList = response.getData().getValue();
                 if (valueList != null && !valueList.isEmpty()) {
                     logger.warn("Value0: " + valueList.get(0));
                     Object firstObject = clazz.cast(valueList.get(0));
                     logger.warn("First object: " + firstObject.toString());
-                    // Trabaja con el objeto casteado
+                    return firstObject;
                 } else {
                     logger.warn("Value list is empty");
+                    return null;
                 }
             } else {
                 logger.warn("Response or data is null");
+                return null;
             }
         } catch (ClassNotFoundException e) {
             logger.error("Clase no encontrada: " + queue.getObject(), e);
+            return null;
+
         }
-        logger.warn("Procesando objeto: " + queue.toString());
-        logger.warn("Procesando tarea: " + task.toString());
     }
 
 

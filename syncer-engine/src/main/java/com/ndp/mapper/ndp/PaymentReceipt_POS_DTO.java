@@ -15,6 +15,15 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PaymentReceipt_POS_DTO implements Serializable{
 
+    private String ndpCase;
+    private String companyCode;
+    private String createDate;
+    private String status;
+    private String code;
+    private String id;
+    private String codeERP;
+
+
     private String businessPartnerCode;
     private String businessPartnerName;
     private String businessPartner;
