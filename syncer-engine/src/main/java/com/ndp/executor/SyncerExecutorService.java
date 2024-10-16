@@ -69,7 +69,6 @@ public class SyncerExecutorService {
             logger.warn(task.getSourceCode() + " - # Pendientes: " + filteredSequences.size());
             processQueueByTask(task, filteredSequences);
         });
-
     }
 
     public void processQueueByTask(Task task, List<QueueDto> filteredQueue) {

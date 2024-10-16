@@ -1,5 +1,7 @@
 package com.ndp.service.rest;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ndp.types.rest.Response;
 import com.ndp.util.NDPEncryptPass;
@@ -33,6 +35,7 @@ public class NDPServices {
     @Inject
     public NDPServices(Business business) {
         this.objectMapper = new ObjectMapper();
+        this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.ndpEncryptPass = new NDPEncryptPass();
         this.path = business.getPath();
         this.identifier = business.getUser();
@@ -46,6 +49,7 @@ public class NDPServices {
             assert this.ndpEncryptPass != null;
             this.signature = this.ndpEncryptPass.getEncryptedPassword(this.password, this.identifier);
             String url = this.path + "secengine/auth/login";
+            logger.warn("URL Servicio NDP: " + this.path);
             HttpClient client = HttpClient.newHttpClient();
             Map<String, String> headers = new HashMap<>();
             headers.put("accept", "application/json, text/plain, */*");
@@ -61,9 +65,8 @@ public class NDPServices {
             HttpRequest request = requestBuilder.build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200) {
-                logger.warn("bodyResponse" + response.body());
                 this.token = response.headers().firstValue("Token").orElse(null);
-                logger.warn("Login request" + this.token);
+                logger.warn("Token Servicio NDP: " + this.token);
                 return this.token;
             } else {
                 logger.error("Login request failed with status code: " + response.statusCode());
@@ -110,6 +113,45 @@ public class NDPServices {
             }
         } catch (Exception e) {
             logger.error("Error during sequence data request", e);
+            return null;
+        }
+    }
+
+    public <T> T ndpPost(String url, Object requestObject, Class<T> responseClass) {
+        try {
+            if (this.token == null || this.token.isEmpty()) {
+                logger.error("Token is not available. Please login first.");
+                return null;
+            }
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.getFactory().configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true);
+            String requestBody = objectMapper.writeValueAsString(requestObject);
+            logger.warn("Request Body " + requestBody);
+            logger.warn("Request URL Post" + this.path + url);
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(this.path + url))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + this.token)
+                    .header("company", this.company)
+                    .header("entity", this.company)
+                    .header("Token", this.token)
+                    .header("fingerprint", this.fingerprint)
+                    .header("signature", this.signature)
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.warn("ResponseStatus: " + response.statusCode());
+            logger.warn("Response Body: " + response.body());
+            if (response.statusCode() == 200) {
+                return objectMapper.readValue(response.body(), responseClass);
+            } else {
+                logger.error("Request failed with status code: " + response.statusCode());
+                return null;
+            }
+        } catch (Exception e) {
+            logger.error("Error during POST request", e);
             return null;
         }
     }
