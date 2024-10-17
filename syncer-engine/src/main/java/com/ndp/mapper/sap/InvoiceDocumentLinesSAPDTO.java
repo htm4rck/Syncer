@@ -2,6 +2,8 @@ package com.ndp.mapper.sap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.ndp.mapper.ndp.PaymentReceiptDetail_POS_DTO;
 import com.ndp.mapper.ndp.PaymentReceipt_POS_DTO;
 import com.ndp.mapper.sap.constants.Constants_SAP_DTO;
@@ -22,6 +24,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @EqualsAndHashCode
+@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class InvoiceDocumentLinesSAPDTO implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger(InvoiceDocumentLinesSAPDTO.class);

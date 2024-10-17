@@ -1,5 +1,7 @@
 package com.ndp.mapper.sap;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +13,7 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 @EqualsAndHashCode
+@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class LineTaxJurisdictionsSAPDTO implements Serializable {
     private String JurisdictionCode; // TODO Codigo de Impuesto: I18
     private Integer JurisdictionType;// TODO Tipo de Documento Ventas: 8

@@ -1,6 +1,7 @@
 package com.ndp.executor;
 
-import com.ndp.entity.queue.Queue;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ndp.entity.syncer.Business;
 import com.ndp.entity.syncer.Task;
 import com.ndp.service.BusinessService;
@@ -10,6 +11,7 @@ import com.ndp.types.rest.Response;
 import com.ndp.util.BusinessConfig;
 import com.ndp.service.rest.NDPServices;
 import com.ndp.service.rest.SAPServices;
+import com.ndp.util.Formatters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -40,7 +42,8 @@ public class SyncerExecutorService {
     TaskService taskService;
     @Inject
     BusinessService businessService;
-
+    @Inject
+    Formatters formatters;
     private static final Map<String, String> classNameMapping = new HashMap<>();
 
     static {
@@ -53,26 +56,32 @@ public class SyncerExecutorService {
         Business businessNDP = businessService.findByCompanyAndBusiness(company, "NDP");
         Business businessSAP = businessService.findByCompanyAndBusiness(company, "SAP.SL");
         logger.warn("businessNDP: " + businessNDP);
+        logger.warn("businessSAP: " + businessSAP);
         ndpServices = new NDPServices(businessNDP);
         sapServices = new SAPServices(businessSAP);
         logger.info("SyncerExecutorService initialized");
-        List<QueueDto> queueList = getSequences();
+        List<QueueDto> queueList = getQueue();
         logger.warn("Objetos en Cola: " + queueList.size());
         List<Task> taskList = taskService.getAllTasks(1, 200);
         logger.warn("Tareas en BD: " + taskList.size());
 
         taskList.forEach((task) -> {
-            List<QueueDto> filteredSequences = queueList.stream()
-                    .filter(sequence -> sequence.getObject()
+            List<QueueDto> filteredQueue = queueList.stream()
+                    .filter(queue -> queue.getObject()
                             .equals(task.getSourceCode()))
                     .toList();
-            logger.warn(task.getSourceCode() + " - # Pendientes: " + filteredSequences.size());
-            processQueueByTask(task, filteredSequences);
+            logger.warn(task.getSourceCode() + " - # Pendientes: " + filteredQueue.size());
+            processQueueByTask(task, filteredQueue);
         });
     }
 
     public void processQueueByTask(Task task, List<QueueDto> filteredQueue) {
-
+        logger.warn(formatters.getLog(
+                task.getDestinationCode(),
+                task.getSourceCode(),
+                task.getName(),
+                "Ejecucion de Cola por Tarea" + task.getCode()
+        ));
         ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
         CompletionService<Void> completionService = new ExecutorCompletionService<>(threadPool);
         for (QueueDto queue : filteredQueue) {
@@ -103,7 +112,7 @@ public class SyncerExecutorService {
         Object convertedObject = convertObject(task, object);
         sendObjectSAP(task, convertedObject);
         logger.warn("Procesando objeto: " + queue.toString());
-        logger.warn("Procesando tarea: " + task.toString());
+        logger.warn("Procesando tarea: " + task.name);
 
     }
 
@@ -115,19 +124,24 @@ public class SyncerExecutorService {
         try {
             String destinationClassName = "com.ndp.mapper.sap." + task.getDestinationCode();
             Class<?> destinationClass = Class.forName(destinationClassName);
-
             Constructor<?> constructor = destinationClass.getConstructor(object.getClass());
             Object destinationObject = constructor.newInstance(object);
-            logger.warn("Destination object: " + destinationObject.toString());
-
+            ObjectMapper objectMapper = new ObjectMapper();
+            logger.warn("Destination object: " + objectMapper.writeValueAsString(destinationObject));
+            return destinationObject;
         } catch (ClassNotFoundException e) {
             logger.error("Clase no encontrada: " + task.getDestinationCode(), e);
+            return null;
         } catch (NoSuchMethodException e) {
             logger.error("Constructor no encontrado en la clase: " + task.getDestinationCode(), e);
+            return null;
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             logger.error("Error al instanciar la clase: " + task.getDestinationCode(), e);
+            return null;
+        } catch (JsonProcessingException e) {
+            logger.error("Error al convertir el objeto a JSON", e);
+            throw new RuntimeException(e);
         }
-        return object;
     }
 
     public Object getObjectNDP( QueueDto queue ){
@@ -161,8 +175,7 @@ public class SyncerExecutorService {
         }
     }
 
-
-    public List<QueueDto> getSequences() {
+    public List<QueueDto> getQueue() {
         try {
             Response<QueueDto> sequence = ndpServices.ndpGet("queue-engine/queue?size=200&page=1", QueueDto.class);
             if (sequence != null) {

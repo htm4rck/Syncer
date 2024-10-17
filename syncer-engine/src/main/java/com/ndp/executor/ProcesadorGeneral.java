@@ -1,12 +1,9 @@
 package com.ndp.executor;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ndp.entity.syncer.Business;
 import com.ndp.service.rest.NDPServices;
-import io.quarkus.runtime.StartupEvent;
-import jakarta.enterprise.event.Observes;
 import lombok.Getter;
 import lombok.Setter;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.logging.FileHandler;
-import java.util.logging.SimpleFormatter;
 import java.util.stream.Collectors;
 
 interface Procesable {
@@ -751,7 +746,11 @@ class SAPService {
             logger.warn("Request: " + objetoJSON);
 
             HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(120)).build();
-            HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).header("Content-Type", "application/json").header("Cookie", cookie.get()).POST(HttpRequest.BodyPublishers.ofString(objetoJSON)).build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url)).header("Content-Type", "application/json")
+                    .header("Cookie", cookie.get())
+                    .POST(HttpRequest.BodyPublishers.ofString(objetoJSON))
+                    .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 

@@ -1,5 +1,7 @@
 package com.ndp.mapper.sap;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.ndp.mapper.ndp.DocumentInstallmentsDTO;
 import com.ndp.mapper.ndp.PaymentReceipt_POS_DTO;
 import com.ndp.mapper.sap.constants.Constants_SAP_DTO;
@@ -19,6 +21,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @EqualsAndHashCode
+@JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class Invoice_SAP_DTO  implements Serializable {
     private static final Logger logger = LoggerFactory.getLogger(Invoice_SAP_DTO.class);
 

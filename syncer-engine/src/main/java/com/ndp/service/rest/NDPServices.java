@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ndp.types.rest.Response;
+import com.ndp.util.Formatters;
 import com.ndp.util.NDPEncryptPass;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -24,6 +25,8 @@ public class NDPServices {
     ObjectMapper objectMapper;
     @Inject
     NDPEncryptPass ndpEncryptPass;
+    @Inject
+    Formatters formatters;
     private final String path;
     private final String fingerprint = "45e0fcea3a3231f3ace7c83b616989ed";
     private String signature = "signature";
@@ -34,6 +37,7 @@ public class NDPServices {
 
     @Inject
     public NDPServices(Business business) {
+        this.formatters = new Formatters();
         this.objectMapper = new ObjectMapper();
         this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.ndpEncryptPass = new NDPEncryptPass();
@@ -98,12 +102,25 @@ public class NDPServices {
                     .GET();
 
             headers.forEach(requestBuilder::header);
+            logger.warn(formatters.getLog(
+                    clazz.getName(),
+                    "REQUEST",
+                    "null",
+                    "GET NDP: " + clazz.getName()
+            ));
 
             HttpRequest request = requestBuilder.build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
                 String responseBody = response.body();
+                logger.warn(formatters.getLog(
+                        clazz.getName(),
+                        "RESPONSE",
+                        "GET NDP: " + clazz.getName(),
+                        responseBody
+
+                ));
                 logger.warn("Response body: " + responseBody);
                 logger.warn("Response Clazz: " + clazz.getName());
                 return objectMapper.readValue(responseBody, objectMapper.getTypeFactory().constructParametricType(Response.class, clazz));

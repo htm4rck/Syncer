@@ -7,8 +7,10 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Optional;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ndp.entity.syncer.Business;
+import com.ndp.util.Formatters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
@@ -21,14 +23,17 @@ public class SAPServices {
     private String password;
     private String userName;
     private Optional<String> cookie = Optional.empty();
+    @Inject
+    Formatters formatters;
 
     @Inject
     public SAPServices(Business business) {
         if (business == null || business.getPath() == null) {
             throw new IllegalArgumentException("Business object or URLBase cannot be null");
         }
+        this.formatters = new Formatters();
         this.URLBase = business.getPath();
-        this.companyBD = business.getCompany();
+        this.companyBD = business.getCompanyBD();
         this.userName = business.getUser();
         this.password = business.getPass();
         loginToSAP();
@@ -42,6 +47,7 @@ public class SAPServices {
             }
 
             String url = URLBase + "Login";
+            logger.warn("URL: " + url);
             String json = String.format("""
                         {
                             "CompanyDB": "%s",
@@ -49,7 +55,7 @@ public class SAPServices {
                             "UserName": "%s"
                         }
                     """, companyBD, password, userName);
-
+            logger.warn("JSON login SAP: " + json);
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -83,13 +89,20 @@ public class SAPServices {
         try {
             String url = URLBase + path;
             ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             String json = mapper.writeValueAsString(object);
+            logger.warn(formatters.getLog(
+                    "Clase",
+                    "REQUEST",
+                    "POST SAP: " + "Clase",
+                    json
 
+            ));
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
-                    .header("Cookie", this.getCookie().get())
+                    .header("Cookie", cookie.get())
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .build();
 
