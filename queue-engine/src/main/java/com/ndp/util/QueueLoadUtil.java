@@ -26,7 +26,7 @@ public class QueueLoadUtil {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     @Inject
     QueueService queueService;
-
+/*
     public void onStart(@Observes StartupEvent ev) {
         logger.info("Inicio de LoadService");
         try {
@@ -35,7 +35,7 @@ public class QueueLoadUtil {
             logger.error("Error en el proceso de carga de CSV", e);
         }
     }
-
+*/
     @Transactional
     public void loadQueueCSV(String fileName) throws Exception {
         logger.info("Inicio de loadQueueCSV");

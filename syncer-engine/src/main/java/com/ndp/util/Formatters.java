@@ -1,7 +1,9 @@
 package com.ndp.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import jakarta.enterprise.context.ApplicationScoped;
-
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -24,5 +26,12 @@ public class Formatters {
                         message
 
         );
+    }
+
+    public static String minifyJson(String json) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, false);
+        Object jsonObject = objectMapper.readValue(json, Object.class);
+        return objectMapper.writeValueAsString(jsonObject);
     }
 }

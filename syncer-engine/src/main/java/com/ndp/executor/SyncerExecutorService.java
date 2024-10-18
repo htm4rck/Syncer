@@ -1,7 +1,5 @@
 package com.ndp.executor;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ndp.entity.syncer.Business;
 import com.ndp.entity.syncer.Task;
 import com.ndp.service.BusinessService;
@@ -20,10 +18,7 @@ import io.quarkus.runtime.StartupEvent;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 @ApplicationScoped
@@ -110,14 +105,21 @@ public class SyncerExecutorService {
     public void processObject(Task task, QueueDto queue) {
         Object object = getObjectNDP(queue);
         Object convertedObject = convertObject(task, object);
-        sendObjectSAP(task, convertedObject);
-        logger.warn("Procesando objeto: " + queue.toString());
-        logger.warn("Procesando tarea: " + task.name);
-
+        Optional<String> var = sendObjectSAP(task, convertedObject);
+        QueueDto patchQueue = new QueueDto();
+        patchQueue.setUid(queue.getUid());
+        patchQueue.setAttempts(0);
+        if (var.isPresent()) {
+            logger.warn("Response from SAP: " + var.get());
+        } else {
+            int attempts = queue.getAttempts() != null ? queue.getAttempts() : 0;
+            patchQueue.setAttempts(attempts + 1);
+        }
+        ndpServices.ndpPatch("queue-engine/queue/" + queue.getUid(), patchQueue, Object.class);
     }
 
-    public void sendObjectSAP(Task task, Object object) {
-        sapServices.sendPostRequest(task.destinationPath, object);
+    public Optional<String> sendObjectSAP(Task task, Object object) {
+        return sapServices.sendPostRequest(task.destinationPath, object);
     }
 
     public Object convertObject(Task task, Object object) {
@@ -125,10 +127,7 @@ public class SyncerExecutorService {
             String destinationClassName = "com.ndp.mapper.sap." + task.getDestinationCode();
             Class<?> destinationClass = Class.forName(destinationClassName);
             Constructor<?> constructor = destinationClass.getConstructor(object.getClass());
-            Object destinationObject = constructor.newInstance(object);
-            ObjectMapper objectMapper = new ObjectMapper();
-            logger.warn("Destination object: " + objectMapper.writeValueAsString(destinationObject));
-            return destinationObject;
+            return constructor.newInstance(object);
         } catch (ClassNotFoundException e) {
             logger.error("Clase no encontrada: " + task.getDestinationCode(), e);
             return null;
@@ -138,13 +137,10 @@ public class SyncerExecutorService {
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             logger.error("Error al instanciar la clase: " + task.getDestinationCode(), e);
             return null;
-        } catch (JsonProcessingException e) {
-            logger.error("Error al convertir el objeto a JSON", e);
-            throw new RuntimeException(e);
         }
     }
 
-    public Object getObjectNDP( QueueDto queue ){
+    public Object getObjectNDP(QueueDto queue) {
         try {
             String className = classNameMapping.get(queue.getObject());
             logger.warn("Clase: " + className);
@@ -156,10 +152,7 @@ public class SyncerExecutorService {
             if (response != null && response.getData() != null) {
                 List<?> valueList = response.getData().getValue();
                 if (valueList != null && !valueList.isEmpty()) {
-                    logger.warn("Value0: " + valueList.get(0));
-                    Object firstObject = clazz.cast(valueList.get(0));
-                    logger.warn("First object: " + firstObject.toString());
-                    return firstObject;
+                    return clazz.cast(valueList.get(0));
                 } else {
                     logger.warn("Value list is empty");
                     return null;
@@ -175,9 +168,10 @@ public class SyncerExecutorService {
         }
     }
 
+
     public List<QueueDto> getQueue() {
         try {
-            Response<QueueDto> sequence = ndpServices.ndpGet("queue-engine/queue?size=200&page=1", QueueDto.class);
+            Response<QueueDto> sequence = ndpServices.ndpGet("queue-engine/queue?size=200&page=1&maxAttempts=3&company="+company, QueueDto.class);
             if (sequence != null) {
                 logger.info("Sequence data retrieved successfully: " + sequence);
                 this.listSequence = sequence.getData().getPagination().getList();
@@ -192,4 +186,14 @@ public class SyncerExecutorService {
         }
     }
 
+    public void potchQueue(Queue queue) {
+        try {
+            ndpServices.ndpPatch("queue-engine/queue", queue, Object.class);
+        } catch (Exception e) {
+            logger.error("Error al enviar la cola", e);
+        }
+
+    }
+
 }
+

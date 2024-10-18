@@ -172,5 +172,44 @@ public class NDPServices {
             return null;
         }
     }
+
+    public <T> T ndpPatch(String url, Object requestObject, Class<T> responseClass) {
+        try {
+            if (this.token == null || this.token.isEmpty()) {
+                logger.error("Token is not available. Please login first.");
+                return null;
+            }
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.getFactory().configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true);
+            String requestBody = objectMapper.writeValueAsString(requestObject);
+            logger.warn("Request patch Body " + requestBody);
+            logger.warn("Request patch URL" + this.path + url);
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(this.path + url))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + this.token)
+                    .header("company", this.company)
+                    .header("entity", this.company)
+                    .header("Token", this.token)
+                    .header("fingerprint", this.fingerprint)
+                    .header("signature", this.signature)
+                    .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.warn("ResponseStatus: " + response.statusCode());
+            logger.warn("Response Body: " + response.body());
+            if (response.statusCode() == 200) {
+                return objectMapper.readValue(response.body(), responseClass);
+            } else {
+                logger.error("Request failed with status code: " + response.statusCode());
+                return null;
+            }
+        } catch (Exception e) {
+            logger.error("Error during POST request", e);
+            return null;
+        }
+    }
 }
 

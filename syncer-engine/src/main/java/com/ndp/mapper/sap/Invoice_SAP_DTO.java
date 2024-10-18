@@ -136,7 +136,6 @@ public class Invoice_SAP_DTO  implements Serializable {
 
 
     public Invoice_SAP_DTO(PaymentReceipt_POS_DTO paymentReceipt) {
-        //logger.warn("incio de mapeo de la pr");
         this.U_NDP_CODCAJ = paymentReceipt.getCashRegisterCode()==null?"":paymentReceipt.getCashRegisterCode();
         PaymentReceipt_POS_DTO paymentReceiptDTO = (PaymentReceipt_POS_DTO) paymentReceipt;
         this.U_CL_CODEMP = paymentReceiptDTO.getStoreEntry() == null ? "" : paymentReceiptDTO.getStoreEntry();
@@ -147,15 +146,12 @@ public class Invoice_SAP_DTO  implements Serializable {
         this.JournalMemo = paymentReceiptDTO.getBusinessPartnerName().length() > 50 ? // 50 chars
                 paymentReceiptDTO.getBusinessPartnerName().substring(0, 50) :
                 paymentReceiptDTO.getBusinessPartnerName();
-        //logger.info("mapeo de la pr 1.0 ");
 
         if (paymentReceiptDTO.getFlConsolidated() != null && paymentReceiptDTO.getFlConsolidated().equals("Y")) {
             this.FatherCard = paymentReceiptDTO.getConsolidatedBusinessPartner();
             this.FatherType = "cPayments_sum";
         }
         this.U_VS_INCPRCP = paymentReceiptDTO.getIsPerception() == null ? "N" : paymentReceiptDTO.getIsPerception();
-
-        //logger.info("mapeo de la pr 1.1.0 ");
         this.CardCode = paymentReceiptDTO.getBusinessPartnerCode();
         this.FederalTaxID = paymentReceiptDTO.getNif();
         this.DocCurrency = paymentReceiptDTO.getCurrency();
@@ -164,18 +160,12 @@ public class Invoice_SAP_DTO  implements Serializable {
         this.DocDate = paymentReceiptDTO.getDocDate() != null ? paymentReceiptDTO.getDocDate() : paymentReceiptDTO.getCreateDate();
         this.DocDueDate = paymentReceiptDTO.getDueDate() != null ? paymentReceiptDTO.getDueDate() : paymentReceiptDTO.getCreateDate();
         this.TaxDate = paymentReceiptDTO.getDocDate() != null ? paymentReceiptDTO.getDocDate() : paymentReceiptDTO.getCreateDate();
-        //condicion de pago
-        //logger.info("mapeo de la pr 1.1");
         this.PaymentGroupCode = paymentReceiptDTO.getPaymentConditionGroupNumber() == null ? -1 : paymentReceiptDTO.getPaymentConditionGroupNumber();
         this.PayToCode = paymentReceiptDTO.getPayAddressName();
-        //this.Address2 = paymentReceiptDTO.getPayAddress();
         this.ShipToCode = paymentReceiptDTO.getShipAddressName();
-        //this.Address = paymentReceiptDTO.getShipAddress();
-        //logger.info("mapeo de la pr 1.2");
         String documentTypeCode = paymentReceiptDTO.getReceiptType();
         String serialNumber = paymentReceiptDTO.getSerial();
         String correlativeNumber = Formatters.formatNumberAddLeadingZeros(paymentReceiptDTO.getNumber(), 8);
-        //logger.info("mapeo de la pr 1.3");
         this.NumAtCard = String.format("%s%s-%s", documentTypeCode, serialNumber, correlativeNumber);
         this.SalesPersonCode = paymentReceiptDTO.getSalesPersonCode() == null ? -1 : paymentReceiptDTO.getSalesPersonCode();
         this.U_BPV_SERI = String.format("%s-%s", serialNumber, documentTypeCode);
@@ -186,7 +176,6 @@ public class Invoice_SAP_DTO  implements Serializable {
         this.U_VS_USRSV = "Y";
         this.U_BPP_MDSD = serialNumber;
         this.U_BPP_MDCD = correlativeNumber;
-        //logger.info("mapeo de la pr 1.4");
         this.U_NDP_CODE = paymentReceiptDTO.getId();
         this.U_NDP_CLADOC = paymentReceiptDTO.getNdpClaDoc();
         this.U_CL_NOMALT = paymentReceiptDTO.getBusinessName() == null ? "" : paymentReceiptDTO.getBusinessName();
@@ -207,7 +196,6 @@ public class Invoice_SAP_DTO  implements Serializable {
             paymentReceiptDTO.setMonDet(0.0);
         }
 
-        //logger.info("mapeo de la pr 1.5");
         this.Comments = paymentReceiptDTO.getComment();
         this.U_VS_AFEDET = paymentReceiptDTO.getAfeDet();
         this.U_VS_PORDET = paymentReceiptDTO.getPorDet();
@@ -224,7 +212,6 @@ public class Invoice_SAP_DTO  implements Serializable {
         this.U_NDP_MIG_EST = Constants_SAP_DTO.MIGRATION_STATUS_FINALIZED;
         this.U_NDP_MIG_FEC = Formatters.formatDateToSAPString(new Date());
         this.U_NDP_MIG_MSJ = Constants_SAP_DTO.MIGRATION_MESSAGE_COMPLETED;
-        //logger.info("mapeo de la pr 1.6");
 
         if (paymentReceiptDTO.getReservationInvoice() != null && (paymentReceiptDTO.getReservationInvoice().equals("Y"))) {
             this.ReserveInvoice = "tYES";
@@ -239,7 +226,6 @@ public class Invoice_SAP_DTO  implements Serializable {
         if (paymentReceiptDTO.getAfeDet() != null && (paymentReceiptDTO.getAfeDet().equals("Y"))) {
             this.U_VS_TIPO_FACT = "1001";
         }
-        //logger.info("mapeo de la pr 1.6.1");
 
         if (paymentReceiptDTO.getIsExportInvoice() != null && (paymentReceiptDTO.getIsExportInvoice().equals("Y"))) {
             this.U_VS_TIPO_FACT = "0200";
@@ -248,7 +234,6 @@ public class Invoice_SAP_DTO  implements Serializable {
             if (paymentReceiptDTO.getIncoterms() != null) this.U_CL_ICTRM = paymentReceiptDTO.getIncoterms();
 
         }
-        //logger.info("mapeo de la pr 1.6.2");
 
         if (paymentReceiptDTO.getCurrency() != null && (!paymentReceiptDTO.getCurrency().equals("SOL"))) {
             this.DocRate = paymentReceiptDTO.getRate();
@@ -258,11 +243,9 @@ public class Invoice_SAP_DTO  implements Serializable {
         if (this.U_VS_INCPRCP.equals("Y")) {
             this.U_VS_METVAL = documentTypeCode.equals("01") ? "F" : "B";
         }
-        //logger.info("mapeo de la pr 1.7");
 
         this.DocumentLines = new ArrayList<>();
         paymentReceiptDTO.getDetail().forEach(detail -> this.DocumentLines.add(new InvoiceDocumentLinesSAPDTO(detail, this.DocCurrency, paymentReceiptDTO)));
-        //logger.info("Percepcion fin");
         if (paymentReceiptDTO.getAfeDet().equals("Y") || paymentReceiptDTO.getAfeRet().equals("Y")) {
             this.DocumentSubType = "dDocument_Items";
             this.DocumentInstallments = new ArrayList<>();
@@ -279,7 +262,6 @@ public class Invoice_SAP_DTO  implements Serializable {
             }
 
         }
-        //logger.info("mapeo de la pr 1.8");
 
         if (System.getenv().get("company") != null && System.getenv().get("company").equals("BASA")) {
             this.U_CL_TIPFAC = paymentReceiptDTO.getSaleType();
@@ -297,7 +279,6 @@ public class Invoice_SAP_DTO  implements Serializable {
 
         U_CL_CONTIN = (paymentReceiptDTO.getUseSerialManual().equals("Y")) ? "Y" : "N";
         this.setU_NDP_CASO(paymentReceiptDTO.getNdpCase());
-        //logger.info("fin mapeo de la pr");
 
 
     }
@@ -474,11 +455,9 @@ public class Invoice_SAP_DTO  implements Serializable {
     }*/
 
     private void logErrorDetails(NullPointerException e) {
-        // Capturando la línea de código donde ocurrió el NPE
         StackTraceElement[] stackTrace = e.getStackTrace();
-        StackTraceElement cause = stackTrace[0]; // Primera línea del stack trace
+        StackTraceElement cause = stackTrace[0];
 
-        // Intentando leer la línea de código específica
         String lineOfCode = "";
         try {
             String filePath = "src/main/java/com/ndp/mapper/models/standart/b1s_v1." + cause.getClassName().replace('.', '/') + ".java";

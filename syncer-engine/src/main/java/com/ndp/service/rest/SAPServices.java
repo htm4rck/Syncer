@@ -96,7 +96,6 @@ public class SAPServices {
                     "REQUEST",
                     "POST SAP: " + "Clase",
                     json
-
             ));
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
@@ -107,12 +106,23 @@ public class SAPServices {
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            logger.warn("ResponseStatusSAP: " + response.statusCode());
-            logger.warn("ResponseSAP: " + response.body());
+            String compressedResponseBody = Formatters.minifyJson(response.body());
             if (response.statusCode() == 200) {
+                logger.warn(formatters.getLog(
+                        "Clase",
+                        "RESPONSE",
+                        "Estado Response: " + response.statusCode(),
+                        compressedResponseBody
+                ));
                 return Optional.of(response.body());
             } else {
-                logger.error("POST request failed with status code: " + response.statusCode());
+                logger.warn(formatters.getLog(
+                        "Clase",
+                        "RESPONSE - ERROR",
+                        "Estado Response: " + response.statusCode(),
+                        compressedResponseBody
+                ));
+                return Optional.empty();
             }
         } catch (Exception e) {
             logger.error("Error during POST request to SAP", e);

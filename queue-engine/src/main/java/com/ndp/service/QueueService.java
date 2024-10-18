@@ -101,10 +101,12 @@ public class QueueService {
         }
     }
 
-    public List<Queue> listQueuesByCompany(String company, int page, int size) {
+    @Transactional
+    public List<Queue> listQueuesByCompanyAndAttempts(String company, int maxAttempts, int page, int size) {
         int firstResult = (page - 1) * size;
-        return entityManager.createQuery("SELECT q FROM Queue q WHERE q.company = :company", Queue.class)
+        return entityManager.createQuery("SELECT q FROM Queue q WHERE q.company = :company AND (q.attempts < :maxAttempts OR q.attempts IS NULL)", Queue.class)
                 .setParameter("company", company)
+                .setParameter("maxAttempts", maxAttempts)
                 .setFirstResult(firstResult)
                 .setMaxResults(size)
                 .getResultList();
@@ -116,5 +118,39 @@ public class QueueService {
                 .setFirstResult(firstResult)
                 .setMaxResults(size)
                 .getResultList();
+    }
+
+    @Transactional
+    public Queue patchQueue(Queue queue) {
+        try {
+            Queue existingQueue = entityManager.createNamedQuery("Queue.findUID", Queue.class)
+                    .setParameter("uid", queue.getUid())
+                    .getSingleResult();
+            if (existingQueue == null) {
+                logger.warn("Queue not found: " + queue.getUid());
+                return null;
+            } else {
+                mergeObjects(queue, existingQueue);
+                entityManager.merge(existingQueue);
+                return existingQueue;
+            }
+        } catch (Exception e) {
+            logger.error("Error al Actualizar la Cola", e);
+            return null;
+        }
+    }
+
+    private void mergeObjects(Queue source, Queue target) {
+        try {
+            for (java.lang.reflect.Field field : source.getClass().getDeclaredFields()) {
+                field.setAccessible(true);
+                Object value = field.get(source);
+                if (value != null) {
+                    field.set(target, value);
+                }
+            }
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Error while merging Queue objects", e);
+        }
     }
 }

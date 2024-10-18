@@ -13,12 +13,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
 
 @Getter
 @Setter
@@ -134,35 +132,18 @@ public class InvoiceDocumentLinesSAPDTO implements Serializable {
     private String U_NDP_CASO;
 
     public InvoiceDocumentLinesSAPDTO(PaymentReceiptDetail_POS_DTO paymentReceiptDetail, String currency, PaymentReceipt_POS_DTO paymentReceiptDTO) {
-        //logger.info("mapeo de la prd 1.0");
 
         if (java.util.Objects.equals(paymentReceiptDetail.getIsGrossPrice(), "Y")) {
-            //this.PriceAfterVAT = paymentReceiptDetail.getGrossPrice();
             this.UnitPrice = paymentReceiptDetail.getUnitPrice();
         } else {
             /* TODO
              * VALIDAR PARA FUERZA DE VENTAS
              * */
             this.UnitPrice = paymentReceiptDetail.getUnitPrice();
-            this.Price = paymentReceiptDetail.getPrice(); // precio unitario con descuento
+            this.Price = paymentReceiptDetail.getPrice();
         }
-        //logger.info("mapeo de la prd 1.1");
-        /* TODO
-         * NO SE PUEDE ENVIAR A SAP 100%, VA EN 0.
-         * */
         this.DiscountPercent = paymentReceiptDetail.getDiscountPercentage();
         if (this.DiscountPercent == 100) this.DiscountPercent = 0.0;
-        /* TODO
-         * Por revisar
-         * */
-        /*
-        if (paymentReceiptDetail.getTaxCode().equals("I18")) {
-            this.PriceAfterVAT = paymentReceiptDetail.getGrossPrice();
-        } else if (paymentReceiptDetail.getTaxCode().equals("IEX")) {
-            this.PriceAfterVAT = paymentReceiptDetail.getUnitPrice();
-        }
-        */
-        //logger.info("mapeo de la prd 1.2");
         this.ItemCode = paymentReceiptDetail.getItemCode();
         this.ItemDescription = paymentReceiptDetail.getItemName();
         this.Quantity = paymentReceiptDetail.getQuantity();
@@ -177,7 +158,6 @@ public class InvoiceDocumentLinesSAPDTO implements Serializable {
         this.U_VS_TIPAFE = paymentReceiptDetail.getSunatAffectationType();
         this.TaxOnly = Constants_SAP_DTO.mapNdpFlagToSapFlag(paymentReceiptDetail.getOnlyTax());
         this.UoMEntry = paymentReceiptDetail.getUnitMSREntry() == null ? -1 : paymentReceiptDetail.getUnitMSREntry();
-        //logger.info("mapeo de la prd 1.3");
 
         /* TODO
          * BaseType    - 17 = Orden de Venta
@@ -186,41 +166,27 @@ public class InvoiceDocumentLinesSAPDTO implements Serializable {
          * BaseLine    - Line
          */
 
-        //logger.info("mapeo de la prd 1.4");
-
 
         if (!(paymentReceiptDTO.getSaleOrderCode() == null || paymentReceiptDTO.getSaleOrderCode().isEmpty())) {
-            //logger.info("mapeo de la prd 1.4.1; paymentReceiptDTO.getSaleOrderCode(): " + paymentReceiptDTO.getSaleOrderCode() + "; paymentReceiptDTO: " + paymentReceiptDTO.toString() + "; paymentReceiptDetail: " + paymentReceiptDetail.toString());
             this.BaseLine = paymentReceiptDetail.getSaleOrderLine().toString();
             this.BaseEntry = paymentReceiptDetail.getSaleOrderEntry();
             this.BaseNum = paymentReceiptDetail.getSaleOrderDocNum();
             this.BaseType = 17;
 
-            //logger.info("mapeo de la prd 1.4.2");
         }
-
-        //logger.info("mapeo de la prd 1.5");
-
         this.CostingCode = paymentReceiptDetail.getCostingCode();
         this.CostingCode2 = paymentReceiptDetail.getCostingCode2();
         this.CostingCode3 = paymentReceiptDetail.getCostingCode3();
         this.CostingCode4 = paymentReceiptDetail.getCostingCode4();
         this.CostingCode5 = paymentReceiptDetail.getCostingCode5();
-        //this.DiscountPercent = paymentReceiptDetail.getDiscountPercentage();
-        //logger.info("mapeo de la prd 1.6");
         this.setU_NDP_CASO(paymentReceiptDetail.getNdpCase());
         if (paymentReceiptDetail.getUbicationEntry() != null && paymentReceiptDetail.getUbicationEntry() != -1) {
-            //logger.info("mapeo de la prd 1.6.1");
             InvoiceLinesBinAllocation_SAP_DTO invoiceLinesBinAllocation = new InvoiceLinesBinAllocation_SAP_DTO();
-            /* TODO EL LOCATION ENTRY ESTA LLENDO EN DURO EN CASO FALLE??? */
             invoiceLinesBinAllocation.setBinAbsEntry(paymentReceiptDetail.getUbicationEntry());
             invoiceLinesBinAllocation.setQuantity(paymentReceiptDetail.getBaseQuantity());
             this.DocumentLinesBinAllocations = List.of(invoiceLinesBinAllocation);
-            //logger.info("mapeo de la prd 1.6.2");
         }
-        //logger.info("mapeo de la prd 1.7");
         if (paymentReceiptDetail.getBonuses() == null) paymentReceiptDetail.setBonuses(0.00);
-        logger.info("mapeo de la prd 1.8");
         if (paymentReceiptDetail.getDataTax() != null && !paymentReceiptDetail.getDataTax().isEmpty()) {
             ObjectMapper objectMapper = new ObjectMapper();
             try {
@@ -228,9 +194,7 @@ public class InvoiceDocumentLinesSAPDTO implements Serializable {
                 });
                 this.TaxCode = "";
                 this.LineTaxJurisdictions = new ArrayList<>();
-                logger.info(" mapeo de detalle de la ov 3.0 ");
                 for (PaymentReceiptDetail_POS_DTO taxData : taxDataArray.toArray(PaymentReceiptDetail_POS_DTO[]::new)) {
-                    //logger.info("Percepcion {}", new Gson().toJson(taxData));
                     LineTaxJurisdictionsSAPDTO lineTaxJurisdictions = new LineTaxJurisdictionsSAPDTO();
                     lineTaxJurisdictions.setJurisdictionCode(taxData.getTaxCode());
                     lineTaxJurisdictions.setExternalCalcTaxAmount(taxData.getTaxAmount());

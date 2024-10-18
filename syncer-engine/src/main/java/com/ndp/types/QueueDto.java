@@ -21,4 +21,6 @@ public class QueueDto {
     private String createDate;
     private String status;
     private Integer attempts;
+
+
 }

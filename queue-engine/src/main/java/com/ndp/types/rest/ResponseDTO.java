@@ -5,10 +5,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class Response<T> {
+public class ResponseDTO<T> {
     private boolean successful;
     private Data<T> data;
-    public Response(boolean successful, Data<T> data) {
+    public ResponseDTO(boolean successful, Data<T> data) {
         this.successful = successful;
         this.data = data;
     }
