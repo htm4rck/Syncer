@@ -84,6 +84,8 @@ public class NDPServices {
 
     public <T> Response<T> ndpGet(String url, Class<T> clazz) {
         try {
+
+            //TODO: Faltan logs de request y response
             if (this.token == null || this.token.isEmpty()) {
                 logger.error("Token is not available. Please login first.");
                 return null;

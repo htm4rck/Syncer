@@ -41,6 +41,7 @@ public class SyncerExecutorService {
     private static final int NUM_THREADS = 4;
     private static final String COMPANY = "AZALEIA";
     private static final int MAX_ATTEMPTS = 3;
+    private static final int ATTEMPS_NODO = 4;
     private static final Map<String, String> classNameMapping = new HashMap<>();
 
     static {
@@ -62,6 +63,9 @@ public class SyncerExecutorService {
 
         List<QueueDto> queueList = getQueue();
         if (queueList != null) {
+            //TODO: ObjectType vendria a ser el listado de objetos con la tipificacion carga | descarga;
+            //TODO: Task vendria a ser la relacion entre Objectype y empresa
+            //TODO: Asegurar con un sort que las tareas se ejecuten en orden
             List<Task> taskList = taskService.getAllTasks(1, 200);
             processTasks(taskList, queueList);
         }
@@ -96,25 +100,25 @@ public class SyncerExecutorService {
         ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
         CompletionService<Void> completionService = new ExecutorCompletionService<>(threadPool);
 
-        filteredQueue.forEach(queue ->
+        filteredQueue.forEach(nodo ->
                 completionService.submit(() -> {
-                    processObject(task, queue);
+                    processObject(task, nodo);
                     return null;
                 })
         );
 
-        shutdownThreadPool(threadPool, filteredQueue.size(), completionService);
+        shutdownThreadPool(threadPool, completionService);
     }
 
     /**
      * Procesa un objeto específico y lo envía a SAP.
      */
-    private void processObject(Task task, QueueDto queue) {
-        Object object = getObjectNDP(queue);
+    private void processObject(Task task, QueueDto nodo) {
+        Object object = getObjectNDP(nodo);
         assert object != null;
         Object convertedObject = convertObject(task, object);
         Optional<String> response = sendObjectSAP(task, convertedObject);
-        handleQueueResponse(queue, response);
+        handleQueueResponse(nodo, response);
     }
 
     /**
@@ -147,9 +151,9 @@ public class SyncerExecutorService {
             String className = classNameMapping.get(queue.getObject());
             if (className == null) throw new ClassNotFoundException("No mapping found for class: " + queue.getObject());
 
-            Class<?> clazz = Class.forName(className);
-            Response<?> response = ndpServices.ndpGet(queue.getPath(), clazz);
-            return extractDataFromResponse(response, clazz);
+            Class<?> classObject = Class.forName(className);
+            Response<?> response = ndpServices.ndpGet(queue.getPath(), classObject);
+            return extractDataFromResponse(response, classObject);
         } catch (ClassNotFoundException e) {
             logger.error("Clase no encontrada: " + queue.getObject(), e);
             return null;
@@ -206,11 +210,11 @@ public class SyncerExecutorService {
     /**
      * Apaga el pool de threads y espera la finalización de las tareas.
      */
-    private void shutdownThreadPool(ExecutorService threadPool, int queueSize,
+    private void shutdownThreadPool(ExecutorService threadPool,
                                     CompletionService<Void> completionService) {
         threadPool.shutdown();
         try {
-            for (int i = 0; i < queueSize; i++) {
+            for (int i = 0; i < ATTEMPS_NODO; i++) {
                 Future<Void> future = completionService.take();
                 future.get();
             }
