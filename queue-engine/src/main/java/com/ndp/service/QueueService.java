@@ -74,8 +74,8 @@ public class QueueService {
     }
 
     @Transactional
-    public void deleteQueue(Long id) {
-        Queue queue = entityManager.find(Queue.class, id);
+    public void deleteQueue(String uid) {
+        Queue queue = findUID(uid);
         if (queue != null) {
             entityManager.remove(queue);
         }
@@ -83,9 +83,7 @@ public class QueueService {
 
     public Queue findCode(String code) {
         try {
-            return entityManager.createNamedQuery("Queue.findCode", Queue.class)
-                    .setParameter("code", code)
-                    .getSingleResult();
+            return entityManager.createNamedQuery("Queue.findCode", Queue.class).setParameter("code", code).getSingleResult();
         } catch (Exception e) {
             return null;
         }
@@ -93,9 +91,7 @@ public class QueueService {
 
     public Queue findUID(String uid) {
         try {
-            return entityManager.createNamedQuery("Queue.findUID", Queue.class)
-                    .setParameter("uid", uid)
-                    .getSingleResult();
+            return entityManager.createNamedQuery("Queue.findUID", Queue.class).setParameter("uid", uid).getSingleResult();
         } catch (Exception e) {
             return null;
         }
@@ -104,28 +100,18 @@ public class QueueService {
     @Transactional
     public List<Queue> listQueuesByCompanyAndAttempts(String company, int maxAttempts, int page, int size) {
         int firstResult = (page - 1) * size;
-        return entityManager.createQuery("SELECT q FROM Queue q WHERE q.company = :company AND (q.attempts < :maxAttempts OR q.attempts IS NULL)", Queue.class)
-                .setParameter("company", company)
-                .setParameter("maxAttempts", maxAttempts)
-                .setFirstResult(firstResult)
-                .setMaxResults(size)
-                .getResultList();
+        return entityManager.createQuery("SELECT q FROM Queue q WHERE q.company = :company AND (q.attempts < :maxAttempts OR q.attempts IS NULL)", Queue.class).setParameter("company", company).setParameter("maxAttempts", maxAttempts).setFirstResult(firstResult).setMaxResults(size).getResultList();
     }
 
     public List<Queue> listAllQueues(int page, int size) {
         int firstResult = (page - 1) * size;
-        return entityManager.createQuery("SELECT q FROM Queue q", Queue.class)
-                .setFirstResult(firstResult)
-                .setMaxResults(size)
-                .getResultList();
+        return entityManager.createQuery("SELECT q FROM Queue q", Queue.class).setFirstResult(firstResult).setMaxResults(size).getResultList();
     }
 
     @Transactional
     public Queue patchQueue(Queue queue) {
         try {
-            Queue existingQueue = entityManager.createNamedQuery("Queue.findUID", Queue.class)
-                    .setParameter("uid", queue.getUid())
-                    .getSingleResult();
+            Queue existingQueue = entityManager.createNamedQuery("Queue.findUID", Queue.class).setParameter("uid", queue.getUid()).getSingleResult();
             if (existingQueue == null) {
                 logger.warn("Queue not found: " + queue.getUid());
                 return null;

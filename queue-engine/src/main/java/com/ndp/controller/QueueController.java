@@ -65,9 +65,9 @@ public class QueueController {
     }
 
     @DELETE
-    @Path("/{id}")
-    public void deleteQueue(@PathParam("id") Long id) {
-        queueService.deleteQueue(id);
+    @Path("/{uid}")
+    public void deleteQueue(@PathParam("uid") String uid) {
+        queueService.deleteQueue(uid);
     }
 
     @PATCH

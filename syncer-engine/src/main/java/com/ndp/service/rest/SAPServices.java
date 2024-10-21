@@ -18,10 +18,10 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class SAPServices {
     private static final Logger logger = Logger.getLogger(SAPServices.class);
-    private String URLBase;
-    private String companyBD;
-    private String password;
-    private String userName;
+    private final String URLBase;
+    private final String companyBD;
+    private final String password;
+    private final String userName;
     private Optional<String> cookie = Optional.empty();
     @Inject
     Formatters formatters;
@@ -39,9 +39,8 @@ public class SAPServices {
         loginToSAP();
     }
 
-    public Optional<String> loginToSAP() {
+    public void loginToSAP() {
         try {
-            // Ensure URLBase contains a valid URL with scheme
             if (!URLBase.startsWith("http://") && !URLBase.startsWith("https://")) {
                 throw new IllegalArgumentException("URLBase must start with http:// or https://");
             }
@@ -70,7 +69,6 @@ public class SAPServices {
                 List<String> cookies = response.headers().allValues("Set-Cookie");
                 if (!cookies.isEmpty()) {
                     cookie = Optional.of(cookies.get(0));
-                    return cookie;
                 }
             } else {
                 logger.error("Login request failed with status code: " + response.statusCode());
@@ -78,11 +76,6 @@ public class SAPServices {
         } catch (Exception e) {
             logger.error("Error during login to SAP", e);
         }
-        return Optional.empty();
-    }
-
-    public Optional<String> getCookie() {
-        return cookie;
     }
 
     public <T> Optional<String> sendPostRequest(String path, T object) {

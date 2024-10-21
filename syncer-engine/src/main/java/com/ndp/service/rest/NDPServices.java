@@ -211,5 +211,39 @@ public class NDPServices {
             return null;
         }
     }
+
+    public <T> T ndpDeleted(String url, Class<T> responseClass) {
+    try {
+        if (this.token == null || this.token.isEmpty()) {
+            logger.error("Token is not available. Please login first.");
+            return null;
+        }
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(this.path + url))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + this.token)
+                .header("company", this.company)
+                .header("entity", this.company)
+                .header("Token", this.token)
+                .header("fingerprint", this.fingerprint)
+                .header("signature", this.signature)
+                .DELETE()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        logger.warn("ResponseStatus: " + response.statusCode());
+        logger.warn("Response Body: " + response.body());
+        if (response.statusCode() == 200) {
+            return objectMapper.readValue(response.body(), responseClass);
+        } else {
+            logger.error("Request failed with status code: " + response.statusCode());
+            return null;
+        }
+    } catch (Exception e) {
+        logger.error("Error during DELETE request", e);
+        return null;
+    }
+}
 }
 
