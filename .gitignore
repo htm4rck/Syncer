@@ -16,7 +16,6 @@ gradle-app.setting.lock
 !gradle-wrapper.jar
 
 # IntelliJ IDEA
-.idea/
 *.iml
 *.iws
 out/
